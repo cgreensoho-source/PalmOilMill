@@ -4,11 +4,11 @@ import '../../core/api/api_client.dart';
 import '../../core/database/db_helper.dart';
 import '../../data/datasources/sample_remote_datasource.dart';
 import '../../logic/auth/auth_bloc.dart';
-import '../../logic/auth/auth_event.dart';
 import '../../logic/auth/auth_state.dart';
+import '../../logic/sample/sample_bloc.dart';
+import '../../logic/sample/sample_state.dart';
 import '../../logic/sample/sync_service.dart';
-import 'scan_qr_page.dart';
-import 'login_page.dart';
+import 'user_profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -19,6 +19,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _pendingCount = 0;
+  bool _isSyncing = false;
 
   @override
   void initState() {
@@ -26,15 +27,17 @@ class _DashboardPageState extends State<DashboardPage> {
     _checkPendingData();
   }
 
-  // Fungsi buat ngecek ada berapa data yang belum terkirim ke server
+  // Fungsi membaca jumlah data di SQLite
   Future<void> _checkPendingData() async {
     final db = await DBHelper().database;
     final count = await db.rawQuery(
       'SELECT COUNT(*) as total FROM offline_samples WHERE is_synced = 0',
     );
-    setState(() {
-      _pendingCount = firstFormFieldValue(count) ?? 0;
-    });
+    if (mounted) {
+      setState(() {
+        _pendingCount = firstFormFieldValue(count) ?? 0;
+      });
+    }
   }
 
   int? firstFormFieldValue(List<Map<String, dynamic>> list) {
@@ -42,163 +45,165 @@ class _DashboardPageState extends State<DashboardPage> {
     return 0;
   }
 
+  // Fungsi sinkronisasi manual saat tombol ditekan
+  Future<void> _performSync() async {
+    if (_pendingCount == 0) return;
+
+    setState(() => _isSyncing = true);
+
+    final syncService = SyncService(SampleRemoteDataSource(ApiClient()), DBHelper());
+    await syncService.syncData();
+    await _checkPendingData(); // Update angka setelah sync
+
+    setState(() => _isSyncing = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 10),
+                Text("Sisa antrean sekarang: $_pendingCount"),
+              ],
+            ),
+            backgroundColor: _pendingCount == 0 ? Colors.green.shade700 : Colors.orange.shade700,
+          )
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Colors.green.shade700;
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text("Dashboard Sampling"),
+        backgroundColor: primaryColor,
+        elevation: 0,
+        title: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            String firstName = "Pekerja";
+            if (state is AuthAuthenticated) {
+              firstName = state.user.username.split(" ")[0];
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("MILLTRACK HPI", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.2)),
+                Text("Halo, ${firstName.toUpperCase()}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.white70)),
+              ],
+            );
+          },
+        ),
         actions: [
-          // TOMBOL SYNC UPGRADED
-          IconButton(
-            icon: Badge(
-              label: Text(_pendingCount.toString()),
-              isLabelVisible: _pendingCount > 0,
-              child: const Icon(Icons.sync),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const UserProfilePage()));
+              },
+              customBorder: const CircleBorder(),
+              child: const CircleAvatar(
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.person, color: Colors.white),
+              ),
             ),
-            onPressed: () async {
-              final syncService = SyncService(
-                SampleRemoteDataSource(ApiClient()),
-                DBHelper(),
-              );
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Memulai Sinkronisasi..."),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-
-              await syncService.syncData();
-              await _checkPendingData(); // Update angka badge
-
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Sinkronisasi Selesai!"),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-          ),
-          // TOMBOL LOGOUT
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthBloc>().add(LogoutRequested());
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
           ),
         ],
       ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          String username = "Petugas";
-          if (state is AuthAuthenticated) {
-            username = state.user.username;
+      // BlocListener UTAMA: Mendeteksi jika ada data baru masuk dari form!
+      body: BlocListener<SampleBloc, SampleState>(
+        listener: (context, state) {
+          if (state.successMessage != null) {
+            _checkPendingData(); // Langsung perbarui tampilan jika form sukses
           }
-
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
+        },
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  "Halo, $username",
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text("Selamat bertugas, pastikan GPS Anda aktif."),
-                const SizedBox(height: 30),
-
-                // CARD STATUS SINKRONISASI
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: _pendingCount > 0
-                        ? Colors.orange.shade100
-                        : Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _pendingCount > 0 ? Colors.orange : Colors.green,
+                // --- TOMBOL SINKRONISASI RAKSASA ---
+                Material(
+                  color: _pendingCount > 0 ? Colors.orange.shade600 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(32),
+                  elevation: _pendingCount > 0 ? 8 : 0,
+                  shadowColor: Colors.orange.shade200,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(32),
+                    onTap: _isSyncing || _pendingCount == 0 ? null : _performSync,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isSyncing)
+                            const SizedBox(
+                                height: 72,
+                                width: 72,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 6)
+                            )
+                          else
+                            Icon(
+                              _pendingCount > 0 ? Icons.cloud_upload_rounded : Icons.cloud_done_rounded,
+                              size: 72,
+                              color: _pendingCount > 0 ? Colors.white : Colors.grey.shade500,
+                            ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _pendingCount > 0 ? "UNGGAH DATA" : "SISTEM SINKRON",
+                            style: TextStyle(
+                              fontSize: 22,
+                              color: _pendingCount > 0 ? Colors.white : Colors.grey.shade600,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                ),
+                const SizedBox(height: 24),
+
+                // --- STATUS KECIL DI BAWAH TOMBOL ---
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _pendingCount > 0 ? Colors.orange.shade50 : Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _pendingCount > 0 ? Colors.orange.shade200 : Colors.green.shade200),
+                  ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _pendingCount > 0 ? Icons.cloud_off : Icons.cloud_done,
-                        color: _pendingCount > 0 ? Colors.orange : Colors.green,
+                          _pendingCount > 0 ? Icons.schedule_rounded : Icons.check_circle_outline,
+                          size: 16,
+                          color: _pendingCount > 0 ? Colors.orange.shade800 : Colors.green.shade800
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _pendingCount > 0
-                              ? "Ada $_pendingCount data belum terkirim. Klik tombol sync di pojok kanan atas."
-                              : "Semua data sudah aman di server.",
-                          style: TextStyle(
-                            color: _pendingCount > 0
-                                ? Colors.orange.shade900
-                                : Colors.green.shade900,
-                          ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _pendingCount > 0
+                            ? "Ada $_pendingCount sampel menunggu diunggah"
+                            : "Tidak ada antrean data lokal",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _pendingCount > 0 ? Colors.orange.shade800 : Colors.green.shade800,
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                const Spacer(),
-
-                // TOMBOL UTAMA SCAN QR
-                SizedBox(
-                  width: double.infinity,
-                  height: 150,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ScanQRPage(),
-                        ),
-                      );
-                      _checkPendingData(); // Cek data lagi pas balik dari scan
-                    },
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.qr_code_scanner,
-                          size: 60,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          "MULAI SCAN QR STASIUN",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 50),
+                const SizedBox(height: 80),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
