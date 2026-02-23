@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../../core/database/db_helper.dart';
 import '../datasources/sample_remote_datasource.dart';
+import '../models/sample_model.dart';
 
 class SampleRepository {
   final SampleRemoteDataSource remoteDataSource;
@@ -63,6 +64,24 @@ class SampleRepository {
         });
       }
       return "Data disimpan secara lokal (Offline)";
+    }
+  }
+
+  Future<List<SampleModel>> getHistory() async {
+    try {
+      final List<dynamic> rawData = await remoteDataSource.getSampleHistory();
+      return rawData.map((json) => SampleModel.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // FUNGSI BARU: Mengambil detail spesifik
+  Future<Map<String, dynamic>> getSampleDetail(int id) async {
+    try {
+      return await remoteDataSource.getSampleDetail(id);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 }

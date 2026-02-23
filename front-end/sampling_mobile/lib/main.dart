@@ -12,10 +12,10 @@ import 'data/repositories/sample_repository.dart';
 import 'data/repositories/station_repository.dart';
 import 'logic/auth/auth_bloc.dart';
 import 'logic/sample/sample_bloc.dart';
+import 'logic/history/sample_history_bloc.dart';
 import 'presentation/pages/login_page.dart';
 
 void main() async {
-  // Pastikan plugin flutter sudah terinisialisasi sebelum panggil DB/API
   WidgetsFlutterBinding.ensureInitialized();
 
   // 1. Setup API & Database
@@ -58,28 +58,35 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    // TAMBAHAN WAJIB: MultiRepositoryProvider mendaftarkan repositori ke context
+    return MultiRepositoryProvider(
       providers: [
-        // Provider untuk Login/Logout
-        BlocProvider(
-          create: (context) => AuthBloc(authRepository: authRepository),
-        ),
-        // Provider untuk Scan QR & Input Sampling
-        BlocProvider(
-          create: (context) => SampleBloc(
-            sampleRepository: sampleRepository,
-            stationRepository: stationRepository,
-          ),
-        ),
+        RepositoryProvider.value(value: authRepository),
+        RepositoryProvider.value(value: sampleRepository),
+        RepositoryProvider.value(value: stationRepository),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Sampling App',
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          useMaterial3: false, // Biar style seragam dengan tutorial sebelumnya
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AuthBloc(authRepository: authRepository),
+          ),
+          BlocProvider(
+            create: (context) => SampleBloc(
+              sampleRepository: sampleRepository,
+              stationRepository: stationRepository,
+            ),
+          ),
+          BlocProvider(
+            create: (context) =>
+                SampleHistoryBloc(sampleRepository: sampleRepository),
+          ),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Sampling App',
+          theme: ThemeData(primarySwatch: Colors.green, useMaterial3: false),
+          home: const LoginPage(),
         ),
-        home: const LoginPage(),
       ),
     );
   }
