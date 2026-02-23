@@ -7,6 +7,17 @@ definitions:
       sample_id:
         type: integer
     type: object
+  controllers.CreateStationRequest:
+    properties:
+      coordinate:
+        description: 'Format: "lat,lng"'
+        type: string
+      station_name:
+        type: string
+    required:
+    - coordinate
+    - station_name
+    type: object
   controllers.GPSValidationRequest:
     properties:
       max_distance:
@@ -83,6 +94,11 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/models.User'
+    type: object
+  controllers.ReviewSampleRequest:
+    properties:
+      is_reviewed:
+        type: boolean
     type: object
   controllers.ScanRequest:
     properties:
@@ -493,6 +509,44 @@ paths:
       summary: Export Laporan PDF
       tags:
       - samples
+  /samples/{id}/review:
+    put:
+      consumes:
+      - application/json
+      description: Mengubah status 'is_reviewed' menjadi true setelah admin memvalidasi
+        data sampel.
+      parameters:
+      - description: Sample ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status Review
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ReviewSampleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: 'Forbidden: Admin only'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: ACC / Review Sampel (Admin Only)
+      tags:
+      - samples
   /samples/images/{id}:
     get:
       description: Mengambil/menampilkan file fisik gambar berdasarkan ID gambar.
@@ -525,6 +579,36 @@ paths:
             additionalProperties: true
             type: object
       summary: Ambil Semua Data Stasiun
+      tags:
+      - stations
+    post:
+      consumes:
+      - application/json
+      description: Memasukkan data stasiun baru. Koordinat harus dikirim dari GPS
+        perangkat FE agar akurat.
+      parameters:
+      - description: Data Stasiun
+        in: body
+        name: station
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateStationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Station'
+        "403":
+          description: 'Forbidden: Admin only'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah Stasiun Baru (Admin Only)
       tags:
       - stations
   /stations/{id}/qr:

@@ -313,3 +313,47 @@ func (ctrl *SampleController) ExportSamplePDF(c *fiber.Ctx) error {
 
 	return c.Send(pdfg.Bytes())
 }
+
+// ReviewSampleRequest untuk body request
+type ReviewSampleRequest struct {
+	IsReviewed bool `json:"is_reviewed"`
+}
+
+// ReviewSample godoc
+// @Summary      ACC / Review Sampel (Admin Only)
+// @Description  Mengubah status 'is_reviewed' menjadi true setelah admin memvalidasi data sampel.
+// @Tags         samples
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      int                  true  "Sample ID"
+// @Param        review  body      ReviewSampleRequest  true  "Status Review"
+// @Success      200     {object}  map[string]string
+// @Failure      403     {object}  map[string]string    "Forbidden: Admin only"
+// @Router       /samples/{id}/review [put]
+func (ctrl *SampleController) ReviewSample(c *fiber.Ctx) error {
+	// 1. Validasi Role Admin
+	role := c.Locals("role")
+	if role != "admin" {
+		return c.Status(403).JSON(fiber.Map{"error": "Akses ditolak: Hanya Admin yang bisa melakukan ACC"})
+	}
+
+	// 2. Ambil ID dari URL
+	id := c.Params("id")
+
+	// 3. Parse Body
+	var req ReviewSampleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Format request salah"})
+	}
+
+	// 4. Update ke Database via Repository
+	if err := ctrl.sampleRepo.UpdateReviewStatus(id, req.IsReviewed); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal update status review"})
+	}
+
+	return c.JSON(fiber.Map{
+		"message":     "Status sampel berhasil diperbarui",
+		"is_reviewed": req.IsReviewed,
+	})
+}
