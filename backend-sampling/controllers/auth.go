@@ -2,159 +2,197 @@ package controllers
 
 import (
 	"regexp"
+	"sampling/config"
 	"sampling/models"
-	"sampling/repository"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-type AuthController struct {
-	userRepo *repository.UserRepository
-}
+type AuthController struct{}
 
 func NewAuthController() *AuthController {
-	return &AuthController{
-		userRepo: repository.NewUserRepository(),
-	}
+	return &AuthController{}
 }
 
-// LoginRequest represents login request body
+// ================= LOGIN =================
+
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-// LoginResponse represents login response
 type LoginResponse struct {
 	Token string      `json:"token"`
 	User  models.User `json:"user"`
 }
 
-// Login handles user authentication (whitelist check)
+// Login godoc
+// @Summary      Login User
+// @Description  Autentikasi user untuk mendapatkan token JWT
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        login  body      LoginRequest  true  "User Credentials"
+// @Success      200    {object}  LoginResponse
+// @Failure      401    {object}  map[string]string "Invalid username or password"
+// @Router       /login [post]
 func (ctrl *AuthController) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
-	user, err := ctrl.userRepo.GetUserByUsernamePassword(req.Username, req.Password)
+	var user models.User
+	// Load roles untuk cek apakah dia admin atau bukan
+	err := config.DB.
+		Preload("Roles").
+		Where("username = ?", req.Username).
+		First(&user).Error
+
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{"error": "Invalid username or password"})
 	}
 
-	// Generate JWT token
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return c.Status(401).JSON(fiber.Map{"error": "Invalid username or password"})
+	}
+
+	// --- LOGIKA PENENTUAN ROLE UNTUK JWT ---
+	// Kita ambil satu role utama (misal admin punya prioritas)
+	userRole := "user" // default
+	for _, r := range user.Roles {
+		if r.RoleName == "admin" {
+			userRole = "admin"
+			break
+		} else if r.RoleName == "asisten" {
+			userRole = "asisten"
+		}
+	}
+
+	// JWT - MASUKKAN ROLE KE CLAIMS
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.UserID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
+		"role":    userRole, // INI YANG TADI ILANG!
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte("your-secret-key")) // Ganti dengan secret key yang aman
+	tokenString, err := token.SignedString([]byte("your-secret-key"))
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to generate token"})
+		return c.Status(500).JSON(fiber.Map{"error": "Failed generate token"})
 	}
 
-	response := LoginResponse{
+	user.Password = ""
+
+	return c.JSON(LoginResponse{
 		Token: tokenString,
-		User:  *user,
-	}
-
-	return c.JSON(response)
+		User:  user,
+	})
 }
 
-// RegisterRequest represents register request body
+// ================= REGISTER =================
+
 type RegisterRequest struct {
-	Nip             string `json:"nip"`
-	Username        string `json:"username"`
-	Email           string `json:"email"`
-	Phone           string `json:"phone"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirm_password"`
-	Gender          string `json:"gender"`
+	Nip             string   `json:"nip"`
+	Username        string   `json:"username"`
+	Email           string   `json:"email"`
+	Phone           string   `json:"phone"`
+	Password        string   `json:"password"`
+	ConfirmPassword string   `json:"confirm_password"`
+	Gender          string   `json:"gender"`
+	Roles           []string `json:"roles"`
 }
 
-// RegisterResponse represents register response
 type RegisterResponse struct {
 	Message string      `json:"message"`
 	User    models.User `json:"user"`
 }
 
-// Register handles user registration
+// Register godoc
+// @Summary      Register User Baru
+// @Description  Membuat akun user baru beserta penentuan Role
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        register  body      RegisterRequest  true  "User Data"
+// @Success      201       {object}  RegisterResponse
+// @Failure      400       {object}  map[string]string "Validation error"
+// @Router       /register [post]
 func (ctrl *AuthController) Register(c *fiber.Ctx) error {
 	var req RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
-	// Validate required fields
-	if req.Nip == "" || req.Username == "" || req.Password == "" || req.ConfirmPassword == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "NIP, username, password, and confirm password are required"})
+	if req.Nip == "" || req.Username == "" || req.Password == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Required fields missing"})
 	}
 
-	// Validate password confirmation
 	if req.Password != req.ConfirmPassword {
-		return c.Status(400).JSON(fiber.Map{"error": "Password and confirm password do not match"})
+		return c.Status(400).JSON(fiber.Map{"error": "Password mismatch"})
 	}
 
-	// Validate password strength (minimum 6 characters)
 	if len(req.Password) < 6 {
-		return c.Status(400).JSON(fiber.Map{"error": "Password must be at least 6 characters long"})
+		return c.Status(400).JSON(fiber.Map{"error": "Password minimal 6 karakter"})
 	}
 
-	// Validate email format if provided
 	if req.Email != "" {
 		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 		if !emailRegex.MatchString(req.Email) {
-			return c.Status(400).JSON(fiber.Map{"error": "Invalid email format"})
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid email"})
 		}
 	}
 
-	// Validate phone format if provided
-	if req.Phone != "" {
-		phoneRegex := regexp.MustCompile(`^[0-9+\-\s()]{10,15}$`)
-		if !phoneRegex.MatchString(req.Phone) {
-			return c.Status(400).JSON(fiber.Map{"error": "Invalid phone number format"})
-		}
-	}
-
-	// Check if user already exists
-	exists, err := ctrl.userRepo.CheckUserExists(req.Nip, req.Username, req.Email, req.Phone)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to check user existence"})
-	}
-	if exists {
-		return c.Status(409).JSON(fiber.Map{"error": "User with this NIP, username, email, or phone already exists"})
+		return c.Status(500).JSON(fiber.Map{"error": "Hash gagal"})
 	}
 
-	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to hash password"})
-	}
-
-	// Create user
 	user := models.User{
 		Nip:      req.Nip,
 		Username: req.Username,
 		Email:    req.Email,
 		Phone:    req.Phone,
-		Password: string(hashedPassword),
+		Password: string(hashed),
 		Gender:   req.Gender,
 	}
 
-	if err := ctrl.userRepo.CreateUser(&user); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to create user"})
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+
+		var roles []models.Role
+		if len(req.Roles) > 0 {
+			// Mencari ID role berdasarkan nama role yang dikirim (misal: "admin")
+			if err := tx.Where("role_name IN ?", req.Roles).Find(&roles).Error; err != nil {
+				return err
+			}
+		}
+
+		if len(roles) > 0 {
+			if err := tx.Model(&user).Association("Roles").Append(&roles); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Gagal register: " + err.Error(),
+		})
 	}
 
-	// Remove password from response
+	config.DB.Preload("Roles").First(&user, user.UserID)
 	user.Password = ""
 
-	response := RegisterResponse{
+	return c.Status(201).JSON(RegisterResponse{
 		Message: "User registered successfully",
 		User:    user,
-	}
-
-	return c.Status(201).JSON(response)
+	})
 }

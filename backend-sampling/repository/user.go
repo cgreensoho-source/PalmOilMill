@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type UserRepository struct {
@@ -16,10 +17,11 @@ func NewUserRepository() *UserRepository {
 	return &UserRepository{db: config.DB}
 }
 
-// GetUserByUsernamePassword retrieves user by username and password (whitelist check)
+// 1. GetUserByUsernamePassword (Untuk Login)
 func (r *UserRepository) GetUserByUsernamePassword(username, password string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("username = ?", username).First(&user).Error
+	// Kita preload Roles sekalian supaya pas login langsung tahu dia Admin atau bukan
+	err := r.db.Preload("Roles").Where("username = ?", username).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -32,36 +34,67 @@ func (r *UserRepository) GetUserByUsernamePassword(username, password string) (*
 	return &user, nil
 }
 
-// GetUserByID retrieves user by ID
+// 2. GetUserByID (Hanya Satu Versi - Mendukung Detail & Edit)
 func (r *UserRepository) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	err := r.db.First(&user, userID).Error
-	return &user, err
+	// Tambahkan Preload Roles agar Admin bisa lihat role user tersebut
+	err := r.db.Preload("Roles").First(&user, userID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
-// CreateUser creates a new user
-func (r *UserRepository) CreateUser(user *models.User) error {
-	return r.db.Create(user).Error
+// 3. CreateUser (Dengan Transaction & Role Mapping)
+func (r *UserRepository) CreateUser(user *models.User, roleNames []string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Simpan data User (Abaikan asosiasi dulu agar tidak error FK)
+		if err := tx.Omit(clause.Associations).Create(user).Error; err != nil {
+			return err
+		}
+
+		for _, name := range roleNames {
+			var role models.Role
+			if err := tx.Where("role_name = ?", name).First(&role).Error; err != nil {
+				return err
+			}
+
+			userRole := models.UserRole{
+				UserID: user.UserID,
+				RoleID: role.RoleID,
+			}
+
+			if err := tx.Create(&userRole).Error; err != nil {
+				return err
+			}
+		}
+		// Load ulang data lengkap dengan roles
+		return tx.Preload("Roles").First(user, user.UserID).Error
+	})
 }
 
-// CheckUserExists checks if user exists by nip, username, email, or phone
+// 4. CheckUserExists (Versi Ringkas - Untuk Validasi Registrasi)
 func (r *UserRepository) CheckUserExists(nip, username, email, phone string) (bool, error) {
 	var count int64
-	query := r.db.Model(&models.User{})
+	err := r.db.Model(&models.User{}).
+		Where("nip = ? OR username = ? OR email = ? OR phone = ?", nip, username, email, phone).
+		Count(&count).Error
 
-	if nip != "" {
-		query = query.Where("nip = ?", nip)
+	if err != nil {
+		return false, err
 	}
-	if username != "" {
-		query = query.Where("username = ?", username)
-	}
-	if email != "" {
-		query = query.Where("email = ?", email)
-	}
-	if phone != "" {
-		query = query.Where("phone = ?", phone)
-	}
+	return count > 0, nil
+}
 
-	err := query.Count(&count).Error
-	return count > 0, err
+// 5. UpdateUser (Untuk CRUD Admin & Reset Password)
+func (r *UserRepository) UpdateUser(user *models.User) error {
+	// Pake Save buat update seluruh field termasuk password yang sudah di-hash
+	return r.db.Save(user).Error
+}
+
+// 6. DeleteUser (Untuk Hapus Akun)
+func (r *UserRepository) DeleteUser(id uint) error {
+	// CASCADE akan dihandle database jika skema benar,
+	// tapi GORM juga bisa handle jika relasi didefinisikan
+	return r.db.Delete(&models.User{}, id).Error
 }

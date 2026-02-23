@@ -76,6 +76,20 @@ Mendaftarkan pengguna baru dengan validasi data yang ketat.
   "gender": "string (optional, 'male' or 'female')"
 }
 ```
+``json
+
+  {
+  "nip": "12345678",
+  "username": "petugas_stasiun1",
+  "email": "petugas@pabrik.com",
+  "phone": "081234567890",
+  "password": "password123",
+  "confirm_password": "password123",
+  "gender": "male",
+  "roles": ["petugas"]
+}
+``
+
 
 #### Response Success (201)
 ```json
@@ -634,3 +648,117 @@ Untuk pertanyaan atau masalah teknis, silakan hubungi tim development atau buat 
 **Version**: 1.0.0
 **Last Updated**: 2024
 **Author**: Backend Development Team
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Register handles user registration
+// func (ctrl *AuthController) Register(c *fiber.Ctx) error {
+// 	var req RegisterRequest
+// 	if err := c.BodyParser(&req); err != nil {
+// 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+// 	}
+
+// 	// Validate required fields
+// 	if req.Nip == "" || req.Username == "" || req.Password == "" || req.ConfirmPassword == "" {
+// 		return c.Status(400).JSON(fiber.Map{"error": "NIP, username, password, and confirm password are required"})
+// 	}
+
+// 	// Validate password confirmation
+// 	if req.Password != req.ConfirmPassword {
+// 		return c.Status(400).JSON(fiber.Map{"error": "Password and confirm password do not match"})
+// 	}
+
+// 	// Validate password strength (minimum 6 characters)
+// 	if len(req.Password) < 6 {
+// 		return c.Status(400).JSON(fiber.Map{"error": "Password must be at least 6 characters long"})
+// 	}
+
+// 	// Validate email format if provided
+// 	if req.Email != "" {
+// 		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+// 		if !emailRegex.MatchString(req.Email) {
+// 			return c.Status(400).JSON(fiber.Map{"error": "Invalid email format"})
+// 		}
+// 	}
+
+// 	// Validate phone format if provided
+// 	if req.Phone != "" {
+// 		phoneRegex := regexp.MustCompile(`^[0-9+\-\s()]{10,15}$`)
+// 		if !phoneRegex.MatchString(req.Phone) {
+// 			return c.Status(400).JSON(fiber.Map{"error": "Invalid phone number format"})
+// 		}
+// 	}
+
+// 	// Check if user already exists
+// 	exists, err := ctrl.userRepo.CheckUserExists(req.Nip, req.Username, req.Email, req.Phone)
+// 	if err != nil {
+// 		return c.Status(500).JSON(fiber.Map{"error": "Failed to check user existence"})
+// 	}
+// 	if exists {
+// 		return c.Status(409).JSON(fiber.Map{"error": "User with this NIP, username, email, or phone already exists"})
+// 	}
+
+// 	// Hash password
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		return c.Status(500).JSON(fiber.Map{"error": "Failed to hash password"})
+// 	}
+
+// 	// Create user
+// 	// user := models.User{
+// 	// 	Nip:      req.Nip,
+// 	// 	Username: req.Username,
+// 	// 	Email:    req.Email,
+// 	// 	Phone:    req.Phone,
+// 	// 	Password: string(hashedPassword),
+// 	// 	Gender:   req.Gender,
+// 	// }
+
+// 	// if err := ctrl.userRepo.CreateUser(&user); err != nil {
+// 	// 	return c.Status(500).JSON(fiber.Map{"error": "Failed to create user"})
+// 	// }
+
+// 	//Cek lagi, kita tidak bisa langsung memasukkan req.Roles ([]string) ke user.Roles ([]models.Role)
+// 	user := models.User{
+// 		Nip:      req.Nip,
+// 		Username: req.Username,
+// 		Email:    req.Email,
+// 		Phone:    req.Phone,
+// 		Password: string(hashedPassword),
+// 		Gender:   req.Gender,
+// 		// Kita tidak bisa langsung memasukkan req.Roles ([]string) ke user.Roles ([]models.Role)
+// 	}
+
+// 	// Rekomendasi: Kirim req.Roles ke repository untuk diproses
+// 	// if err := ctrl.userRepo.CreateUser(&user, req.Roles); err != nil {
+// 	// 	return c.Status(500).JSON(fiber.Map{"error": "Failed to create user"})
+// 	// }
+
+// 	// Panggil repository dengan membawa req.Roles
+// 	if err := ctrl.userRepo.CreateUser(&user, req.Roles); err != nil {
+// 		return c.Status(500).JSON(fiber.Map{"error": "Gagal mendaftarkan user dan role"})
+// 	}
+
+// 	config.DB.Preload("Roles").First(&user, user.UserID)
+
+// 	// Remove password from response
+// 	user.Password = ""
+
+// 	response := RegisterResponse{
+// 		Message: "User registered successfully",
+// 		User:    user,
+// 	}
+
+// 	return c.Status(201).JSON(response)
+// }

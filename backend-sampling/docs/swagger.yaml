@@ -1,0 +1,711 @@
+basePath: /api/v1
+definitions:
+  controllers.CreateSampleResponse:
+    properties:
+      message:
+        type: string
+      sample_id:
+        type: integer
+    type: object
+  controllers.GPSValidationRequest:
+    properties:
+      max_distance:
+        description: Optional, default 50m
+        type: number
+      qr_data:
+        type: string
+      user_lat:
+        type: number
+      user_lng:
+        type: number
+    type: object
+  controllers.GPSValidationResponse:
+    properties:
+      distance:
+        type: number
+      message:
+        type: string
+      recommended_radius:
+        type: number
+      station:
+        additionalProperties: true
+        description: Ganti dari fiber.Map ke ini
+        type: object
+      station_lat:
+        type: number
+      station_lng:
+        type: number
+      user_lat:
+        type: number
+      user_lng:
+        type: number
+      valid:
+        type: boolean
+    type: object
+  controllers.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  controllers.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  controllers.RegisterRequest:
+    properties:
+      confirm_password:
+        type: string
+      email:
+        type: string
+      gender:
+        type: string
+      nip:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  controllers.RegisterResponse:
+    properties:
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  controllers.ScanRequest:
+    properties:
+      coordinate:
+        type: string
+      station_id:
+        type: integer
+    type: object
+  controllers.ScanResponse:
+    properties:
+      message:
+        type: string
+      station_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  controllers.SyncDataRequest:
+    properties:
+      samples:
+        items:
+          $ref: '#/definitions/controllers.SyncSampleRequest'
+        type: array
+    type: object
+  controllers.SyncDataResponse:
+    properties:
+      message:
+        type: string
+      synced_images:
+        type: integer
+      synced_samples:
+        type: integer
+    type: object
+  controllers.SyncImageRequest:
+    properties:
+      image_path:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  controllers.SyncSampleRequest:
+    properties:
+      condition:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/controllers.SyncImageRequest'
+        type: array
+      sample_name:
+        type: string
+      station_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  controllers.UpdateRequest:
+    properties:
+      email:
+        type: string
+      gender:
+        type: string
+      nip:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  models.Image:
+    properties:
+      created_at:
+        type: string
+      image_id:
+        type: integer
+      image_path:
+        type: string
+      sample_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  models.Role:
+    properties:
+      role_id:
+        type: integer
+      role_name:
+        type: string
+    type: object
+  models.Sample:
+    properties:
+      condition:
+        type: string
+      created_at:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/models.Image'
+        type: array
+      is_reviewed:
+        type: boolean
+      sample_id:
+        type: integer
+      sample_name:
+        type: string
+      station:
+        $ref: '#/definitions/models.Station'
+      station_id:
+        type: integer
+      user:
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: Relations (INI YANG SUDAH BENAR)
+      user_id:
+        type: integer
+    type: object
+  models.Station:
+    properties:
+      coordinate:
+        type: string
+      station_id:
+        type: integer
+      station_name:
+        type: string
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      gender:
+        type: string
+      nip:
+        type: string
+      phone:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+      samples:
+        description: Relations
+        items:
+          $ref: '#/definitions/models.Sample'
+        type: array
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    name: Tim Dev Kompetisi
+    url: http://www.yourdomain.com
+  description: Dokumentasi API untuk pengumpulan sampel lapangan, validasi GPS, dan
+    sinkronisasi data offline.
+  termsOfService: http://swagger.io/terms/
+  title: API Sistem Sampling Digital
+  version: "1.0"
+paths:
+  /admin/users/{id}:
+    delete:
+      description: Menghapus user beserta semua relasi datanya di tabel images, samples,
+        dan roles secara permanen (Clean up).
+      parameters:
+      - description: Target User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: User dan seluruh datanya berhasil dibersihkan'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: Gagal total bantai user'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus User Permanen (Clean Delete)
+      tags:
+      - admin-users
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data user tertentu berdasarkan ID. Hanya field yang
+        dikirim yang akan diupdate.
+      parameters:
+      - description: Target User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Data User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Data user berhasil diperbarui'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 'error: User tidak ditemukan'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update User oleh Admin
+      tags:
+      - admin-users
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Autentikasi user untuk mendapatkan token JWT
+      parameters:
+      - description: User Credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.LoginResponse'
+        "401":
+          description: Invalid username or password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login User
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Membuat akun user baru beserta penentuan Role
+      parameters:
+      - description: User Data
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controllers.RegisterResponse'
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register User Baru
+      tags:
+      - auth
+  /samples:
+    get:
+      description: Mengambil semua log sampling dengan fitur filter ID User, ID Stasiun,
+        dan rentang tanggal.
+      parameters:
+      - description: Filter per Petugas
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter per Stasiun
+        in: query
+        name: station_id
+        type: integer
+      - description: 'Format: YYYY-MM-DD'
+        in: query
+        name: start_date
+        type: string
+      - description: 'Format: YYYY-MM-DD'
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Riwayat Sampling (Admin/Asisten)
+      tags:
+      - samples
+    post:
+      consumes:
+      - multipart/form-data
+      description: Petugas lapangan menginput nama sampel, kondisi, dan mengunggah
+        beberapa foto dokumentasi sekaligus.
+      parameters:
+      - description: ID Petugas
+        in: formData
+        name: user_id
+        required: true
+        type: integer
+      - description: ID Stasiun
+        in: formData
+        name: station_id
+        required: true
+        type: integer
+      - description: Nama Sampel
+        in: formData
+        name: sample_name
+        required: true
+        type: string
+      - description: Catatan Kondisi Lapangan
+        in: formData
+        name: condition
+        required: true
+        type: string
+      - description: Multiple Images (Dokumentasi)
+        in: formData
+        name: images
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.CreateSampleResponse'
+        "400":
+          description: Error validation
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Input Data Sampling & Upload Foto
+      tags:
+      - samples
+  /samples/{id}:
+    get:
+      description: Melihat detail lengkap satu data sampling beserta relasi User,
+        Stasiun, dan Foto.
+      parameters:
+      - description: Sample ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Sample'
+      security:
+      - BearerAuth: []
+      summary: Detail Data Sampling
+      tags:
+      - samples
+  /samples/{id}/export:
+    get:
+      description: Menghasilkan dokumen PDF resmi hasil sampling untuk diunduh.
+      parameters:
+      - description: Sample ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Export Laporan PDF
+      tags:
+      - samples
+  /samples/images/{id}:
+    get:
+      description: Mengambil/menampilkan file fisik gambar berdasarkan ID gambar.
+      parameters:
+      - description: Image ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/*
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Lihat File Foto
+      tags:
+      - samples
+  /stations:
+    get:
+      description: Mengambil daftar lengkap stasiun untuk sinkronisasi data mobile
+        app.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ambil Semua Data Stasiun
+      tags:
+      - stations
+  /stations/{id}/qr:
+    get:
+      description: Menghasilkan gambar QR Code (PNG) yang berisi data terenkripsi
+        stasiun untuk discan petugas lapangan.
+      parameters:
+      - description: Station ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: 'error: Station not found'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Generate QR Code Stasiun
+      tags:
+      - stations-qr
+  /stations/{id}/qr-data:
+    get:
+      description: Melihat isi mentah (plaintext) dari QR Code stasiun. Berguna untuk
+        testing integrasi mobile app (Parsing data).
+      parameters:
+      - description: Station ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 'error: Station not found'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Debug Data QR (Plaintext)
+      tags:
+      - stations-qr
+  /stations/{id}/with-qr:
+    get:
+      description: Mengambil data stasiun beserta URL langsung menuju gambar QR Code-nya.
+      parameters:
+      - description: Station ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 'error: Station not found'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Detail Stasiun & Link QR
+      tags:
+      - stations-qr
+  /stations/scan:
+    post:
+      consumes:
+      - application/json
+      description: Memproses data hasil scan QR stasiun untuk pencatatan log petugas.
+      parameters:
+      - description: Scan Data
+        in: body
+        name: scan
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ScanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.ScanResponse'
+        "404":
+          description: Station not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Validasi Scan QR Stasiun
+      tags:
+      - stations
+  /stations/validate-gps:
+    post:
+      consumes:
+      - application/json
+      description: Memvalidasi jarak antara koordinat petugas (GPS HP) dengan koordinat
+        stasiun asli menggunakan rumus Haversine. Maksimal toleransi 50 meter.
+      parameters:
+      - description: GPS & QR Data
+        in: body
+        name: gps
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.GPSValidationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.GPSValidationResponse'
+        "400":
+          description: Invalid format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Validasi Lokasi GPS (Anti-Fraud)
+      tags:
+      - stations
+  /sync:
+    post:
+      consumes:
+      - application/json
+      description: Mengunggah data sampling yang tersimpan secara lokal di perangkat
+        mobile ke server (Offline-to-Online Synchronization).
+      parameters:
+      - description: Bulk Sync Data
+        in: body
+        name: sync
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SyncDataRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.SyncDataResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to sync sample/image
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Sinkronisasi Data Offline
+      tags:
+      - sync
+securityDefinitions:
+  BearerAuth:
+    description: 'Masukkan token dengan format: Bearer <your_token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
