@@ -418,6 +418,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/samples/{id}/review": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengubah status 'is_reviewed' menjadi true setelah admin memvalidasi data sampel.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "samples"
+                ],
+                "summary": "ACC / Review Sampel (Admin Only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Sample ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Status Review",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ReviewSampleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: Admin only",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/stations": {
             "get": {
                 "description": "Mengambil daftar lengkap stasiun untuk sinkronisasi data mobile app.",
@@ -434,6 +492,52 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memasukkan data stasiun baru. Koordinat harus dikirim dari GPS perangkat FE agar akurat.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stations"
+                ],
+                "summary": "Tambah Stasiun Baru (Admin Only)",
+                "parameters": [
+                    {
+                        "description": "Data Stasiun",
+                        "name": "station",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CreateStationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Station"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: Admin only",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -716,6 +820,22 @@ const docTemplate = `{
                 }
             }
         },
+        "controllers.CreateStationRequest": {
+            "type": "object",
+            "required": [
+                "coordinate",
+                "station_name"
+            ],
+            "properties": {
+                "coordinate": {
+                    "description": "Format: \"lat,lng\"",
+                    "type": "string"
+                },
+                "station_name": {
+                    "type": "string"
+                }
+            }
+        },
         "controllers.GPSValidationRequest": {
             "type": "object",
             "properties": {
@@ -830,6 +950,14 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/models.User"
+                }
+            }
+        },
+        "controllers.ReviewSampleRequest": {
+            "type": "object",
+            "properties": {
+                "is_reviewed": {
+                    "type": "boolean"
                 }
             }
         },

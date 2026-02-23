@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"math"
+	"sampling/models"
 	"sampling/repository"
 	"strconv"
 	"strings"
@@ -224,4 +225,55 @@ func calculateDistance(lat1, lng1, lat2, lng2 float64) float64 {
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
 	return R * c // Distance in meters
+}
+
+// CreateStationRequest defines the input for creating a new station
+type CreateStationRequest struct {
+	StationName string `json:"station_name" validate:"required"`
+	Coordinate  string `json:"coordinate" validate:"required"` // Format: "lat,lng"
+}
+
+// CreateStation godoc
+// @Summary      Tambah Stasiun Baru (Admin Only)
+// @Description  Memasukkan data stasiun baru. Koordinat harus dikirim dari GPS perangkat FE agar akurat.
+// @Tags         stations
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        station  body      CreateStationRequest  true  "Data Stasiun"
+// @Success      201      {object}  models.Station
+// @Failure      403      {object}  map[string]string "Forbidden: Admin only"
+// @Router       /stations [post]
+func (ctrl *StationController) CreateStation(c *fiber.Ctx) error {
+	// 1. Check Access (Hanya Admin)
+	role := c.Locals("role")
+	if role != "admin" {
+		return c.Status(403).JSON(fiber.Map{"error": "Access denied: Admin only"})
+	}
+
+	var req CreateStationRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	// 2. Validasi input sederhana
+	if req.StationName == "" || req.Coordinate == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Station name and coordinate are required"})
+	}
+
+	// 3. Mapping ke Model
+	station := models.Station{
+		StationName: req.StationName,
+		Coordinate:  req.Coordinate,
+	}
+
+	// 4. Simpan ke Database
+	if err := ctrl.stationRepo.CreateStation(&station); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to save station"})
+	}
+
+	return c.Status(201).JSON(fiber.Map{
+		"message": "Station created successfully",
+		"data":    station,
+	})
 }

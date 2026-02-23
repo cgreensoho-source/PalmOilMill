@@ -28,3 +28,7 @@ func (r *StationRepository) GetStationByID(stationID uint) (*models.Station, err
 	err := r.db.First(&station, stationID).Error
 	return &station, err
 }
+
+func (r *StationRepository) CreateStation(station *models.Station) error {
+	return config.DB.Create(station).Error
+}
