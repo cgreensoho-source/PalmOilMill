@@ -98,11 +98,11 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     // --- AREA LOGO / JUDUL ---
                     // Nanti kalau punya logo asli, buka komentar di bawah ini:
-                    Image.asset('assets/images/logo.jpg', height: 80),
+                    Image.asset('assets/images/logo.png', height: 120),
                     const SizedBox(height: 24),
 
                     Text(
-                      "SISTEM SAMPLING",
+                      "MILL TRACK",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 28,
@@ -233,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     )
                                         : const Text(
-                                      "MASUK SISTEM",
+                                      "MASUK",
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -251,7 +251,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 24),
 
                     Text(
-                      "v1.0.0 - Departemen Quality Control",
+                      "Copyright © 2026 CGreen. All rights reserved.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
