@@ -21,6 +21,15 @@ func NewQRController() *QRController {
 }
 
 // GenerateQR generates QR code for a specific station
+// GenerateQR godoc
+// @Summary      Generate QR Code Stasiun
+// @Description  Menghasilkan gambar QR Code (PNG) yang berisi data terenkripsi stasiun untuk discan petugas lapangan.
+// @Tags         stations-qr
+// @Produce      image/png
+// @Param        id   path      int  true  "Station ID"
+// @Success      200  {file}    binary
+// @Failure      404  {object}  map[string]string "error: Station not found"
+// @Router       /stations/{id}/qr [get]
 func (ctrl *QRController) GenerateQR(c *fiber.Ctx) error {
 	stationIDStr := c.Params("id")
 
@@ -57,6 +66,15 @@ func (ctrl *QRController) GenerateQR(c *fiber.Ctx) error {
 }
 
 // GetStationWithQR returns station data with QR code URL
+// GetStationWithQR godoc
+// @Summary      Detail Stasiun & Link QR
+// @Description  Mengambil data stasiun beserta URL langsung menuju gambar QR Code-nya.
+// @Tags         stations-qr
+// @Produce      json
+// @Param        id   path      int  true  "Station ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]string "error: Station not found"
+// @Router       /stations/{id}/with-qr [get]
 func (ctrl *QRController) GetStationWithQR(c *fiber.Ctx) error {
 	stationIDStr := c.Params("id")
 
@@ -83,6 +101,15 @@ func (ctrl *QRController) GetStationWithQR(c *fiber.Ctx) error {
 }
 
 // GetQRData returns the QR code data as text for debugging/testing
+// GetQRData godoc
+// @Summary      Debug Data QR (Plaintext)
+// @Description  Melihat isi mentah (plaintext) dari QR Code stasiun. Berguna untuk testing integrasi mobile app (Parsing data).
+// @Tags         stations-qr
+// @Produce      json
+// @Param        id   path      int  true  "Station ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]string "error: Station not found"
+// @Router       /stations/{id}/qr-data [get]
 func (ctrl *QRController) GetQRData(c *fiber.Ctx) error {
 	stationIDStr := c.Params("id")
 

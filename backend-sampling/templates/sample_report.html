@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+      @page {
+          size: A4 portrait;
+          margin: 0;
+      }
+
+      body {
+          font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          color: #374151;
+          margin: 40px auto;
+          padding: 40px 50px;
+          width: 100%;
+          max-width: 210mm;
+          background-color: #ffffff;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+          line-height: 1.5;
+          box-sizing: border-box;
+      }
+
+      @media print {
+          body {
+              margin: 0;
+              padding: 20mm;
+              box-shadow: none;
+              max-width: 100%;
+          }
+      }
+
+      .header {
+          text-align: center;
+          border-bottom: 2px solid #e5e7eb;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+      }
+
+      .header h2 {
+          margin: 0 0 8px 0;
+          text-transform: uppercase;
+          color: #065f46;
+          font-size: 24px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+      }
+
+      .header p {
+          color: #6b7280;
+          margin: 0;
+          font-weight: 500;
+      }
+
+      table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          margin-top: 15px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          overflow: hidden;
+          page-break-inside: avoid;
+      }
+
+      th, td {
+          padding: 12px 16px;
+          text-align: left;
+          font-size: 13px;
+          border-bottom: 1px solid #e5e7eb;
+      }
+
+      tr:last-child th, tr:last-child td {
+          border-bottom: none;
+      }
+
+      th {
+          background-color: #f9fafb;
+          width: 30%;
+          color: #4b5563;
+          font-weight: 600;
+      }
+
+      td {
+          color: #1f2937;
+      }
+
+      .section-title {
+          background-color: #ecfdf5;
+          color: #065f46;
+          padding: 10px 16px;
+          margin-top: 35px;
+          font-size: 13px;
+          font-weight: 700;
+          border-left: 4px solid #10b981;
+          border-radius: 0 6px 6px 0;
+          letter-spacing: 0.5px;
+          page-break-after: avoid;
+      }
+
+      .photo-container { margin-top: 20px; }
+
+      .photo-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 15px;
+          justify-content: space-between;
+      }
+
+      .photo-item {
+          width: calc(50% - 7.5px);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          box-sizing: border-box;
+          page-break-inside: avoid;
+      }
+
+      .photo-item img {
+          width: 100%;
+          height: 220px;
+          object-fit: cover;
+          display: block;
+          border-bottom: 1px solid #e5e7eb;
+      }
+
+      .photo-caption {
+          font-size: 11px;
+          color: #6b7280;
+          padding: 10px;
+          text-align: center;
+          background-color: #f9fafb;
+          font-weight: 500;
+      }
+
+      .footer {
+          margin-top: 50px;
+          width: 100%;
+          border-top: 2px solid #e5e7eb;
+          padding-top: 20px;
+          page-break-inside: avoid;
+      }
+
+      .signature-table {
+          width: 100%;
+          border: none;
+          border-radius: 0;
+          margin-top: 0;
+      }
+
+      .signature-table th, .signature-table td {
+          border: none;
+          padding: 0;
+      }
+
+      .signature-table td {
+          text-align: center;
+          width: 50%;
+          padding-top: 20px;
+          color: #374151;
+          font-size: 13px;
+      }
+
+      .signature-table td:first-child {
+          text-align: left;
+          vertical-align: bottom;
+      }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h2>Laporan Hasil Sampling</h2>
+  <p style="font-size: 12px;">No. Referensi: #SMPL-{{.SampleID}} | Waktu Input: {{.CreatedAt.Format "02/01/2006 15:04"}}</p>
+</div>
+
+<div class="section-title">INFORMASI UMUM</div>
+<table>
+  <tr>
+    <th>Petugas Lapangan</th>
+    <td>{{.User.Username}} (NIP: {{.User.Nip}})</td>
+  </tr>
+  <tr>
+    <th>Nama Sampel</th>
+    <td>{{.SampleName}}</td>
+  </tr>
+  <tr>
+    <th>Status Verifikasi</th>
+    <td><strong>{{if .IsReviewed}}TERVERIFIKASI{{else}}PENDING (BELUM DIREVIEW){{end}}</strong></td>
+  </tr>
+</table>
+
+<div class="section-title">LOKASI & KONDISI</div>
+<table>
+  <tr>
+    <th>Nama Stasiun</th>
+    <td>{{.Station.StationName}}</td>
+  </tr>
+  <tr>
+    <th>Koordinat</th>
+    <td>{{.Station.Coordinate}}</td>
+  </tr>
+  <tr>
+    <th>Catatan Kondisi</th>
+    <td>{{.Condition}}</td>
+  </tr>
+</table>
+
+<div class="section-title">DOKUMENTASI FOTO</div>
+<div class="photo-container">
+  <div class="photo-grid">
+    {{range .Images}}
+    <div class="photo-item">
+      <img src="http://localhost:3000/{{.ImagePath}}" alt="Sampling Photo">
+      <div class="photo-caption">Diunggah pada: {{.CreatedAt.Format "02/01/2006 15:04"}}</div>
+    </div>
+    {{else}}
+    <p style="font-size: 13px; color: #6b7280; text-align: center; width: 100%; padding: 20px 0;">Tidak ada dokumentasi foto.</p>
+    {{end}}
+  </div>
+</div>
+
+<div class="footer">
+  <table class="signature-table">
+    <tr>
+      <td>
+        Dicetak pada: {{.Now}}<br>
+        <strong>Sistem Sampling Digital</strong>
+      </td>
+      <td>
+        Petugas Lapangan,<br><br><br><br>
+        ( <strong>{{.User.Username}}</strong> )
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

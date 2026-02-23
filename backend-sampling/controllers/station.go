@@ -21,6 +21,13 @@ func NewStationController() *StationController {
 }
 
 // GetStations returns list of all stations for QR validation
+// GetStations godoc
+// @Summary      Ambil Semua Data Stasiun
+// @Description  Mengambil daftar lengkap stasiun untuk sinkronisasi data mobile app.
+// @Tags         stations
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /stations [get]
 func (ctrl *StationController) GetStations(c *fiber.Ctx) error {
 	stations, err := ctrl.stationRepo.GetAllStations()
 	if err != nil {
@@ -51,20 +58,44 @@ type GPSValidationRequest struct {
 	MaxDistance float64 `json:"max_distance,omitempty"` // Optional, default 50m
 }
 
-// GPSValidationResponse represents GPS validation response
+// // GPSValidationResponse represents GPS validation response
+// type GPSValidationResponse struct {
+// 	Valid             bool      `json:"valid"`
+// 	Station           fiber.Map `json:"station"`
+// 	Distance          float64   `json:"distance"`
+// 	Message           string    `json:"message"`
+// 	StationLat        float64   `json:"station_lat"`
+// 	StationLng        float64   `json:"station_lng"`
+// 	UserLat           float64   `json:"user_lat"`
+// 	UserLng           float64   `json:"user_lng"`
+// 	RecommendedRadius float64   `json:"recommended_radius"`
+// }
+
+// Ganti yang ini:
 type GPSValidationResponse struct {
-	Valid             bool      `json:"valid"`
-	Station           fiber.Map `json:"station"`
-	Distance          float64   `json:"distance"`
-	Message           string    `json:"message"`
-	StationLat        float64   `json:"station_lat"`
-	StationLng        float64   `json:"station_lng"`
-	UserLat           float64   `json:"user_lat"`
-	UserLng           float64   `json:"user_lng"`
-	RecommendedRadius float64   `json:"recommended_radius"`
+	Valid             bool                   `json:"valid"`
+	Station           map[string]interface{} `json:"station"` // Ganti dari fiber.Map ke ini
+	Distance          float64                `json:"distance"`
+	Message           string                 `json:"message"`
+	StationLat        float64                `json:"station_lat"`
+	StationLng        float64                `json:"station_lng"`
+	UserLat           float64                `json:"user_lat"`
+	UserLng           float64                `json:"user_lng"`
+	RecommendedRadius float64                `json:"recommended_radius"`
 }
 
 // ScanQR validates QR code and records scan with auto-generated timestamp and coordinate
+// ScanQR godoc
+// @Summary      Validasi Scan QR Stasiun
+// @Description  Memproses data hasil scan QR stasiun untuk pencatatan log petugas.
+// @Tags         stations
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        scan  body      ScanRequest  true  "Scan Data"
+// @Success      200   {object}  ScanResponse
+// @Failure      404   {object}  map[string]string "Station not found"
+// @Router       /stations/scan [post]
 func (ctrl *StationController) ScanQR(c *fiber.Ctx) error {
 	var req ScanRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -95,6 +126,16 @@ func (ctrl *StationController) ScanQR(c *fiber.Ctx) error {
 }
 
 // ValidateGPS validates user location against station coordinates
+// ValidateGPS godoc
+// @Summary      Validasi Lokasi GPS (Anti-Fraud)
+// @Description  Memvalidasi jarak antara koordinat petugas (GPS HP) dengan koordinat stasiun asli menggunakan rumus Haversine. Maksimal toleransi 50 meter.
+// @Tags         stations
+// @Accept       json
+// @Produce      json
+// @Param        gps   body      GPSValidationRequest  true  "GPS & QR Data"
+// @Success      200   {object}  GPSValidationResponse
+// @Failure      400   {object}  map[string]string "Invalid format"
+// @Router       /stations/validate-gps [post]
 func (ctrl *StationController) ValidateGPS(c *fiber.Ctx) error {
 	var req GPSValidationRequest
 	if err := c.BodyParser(&req); err != nil {

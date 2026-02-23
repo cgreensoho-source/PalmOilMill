@@ -47,6 +47,18 @@ type SyncDataResponse struct {
 }
 
 // SyncData handles offline to online data synchronization
+// SyncData godoc
+// @Summary      Sinkronisasi Data Offline
+// @Description  Mengunggah data sampling yang tersimpan secara lokal di perangkat mobile ke server (Offline-to-Online Synchronization).
+// @Tags         sync
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        sync  body      SyncDataRequest  true  "Bulk Sync Data"
+// @Success      200   {object}  SyncDataResponse
+// @Failure      400   {object}  map[string]string "Invalid request body"
+// @Failure      500   {object}  map[string]string "Failed to sync sample/image"
+// @Router       /sync [post]
 func (ctrl *SyncController) SyncData(c *fiber.Ctx) error {
 	var req SyncDataRequest
 	if err := c.BodyParser(&req); err != nil {
