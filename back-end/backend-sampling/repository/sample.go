@@ -81,3 +81,8 @@ func (r *SampleRepository) GetImageByID(imageID uint) (*models.Image, error) {
 	}
 	return &image, nil
 }
+
+func (r *SampleRepository) UpdateReviewStatus(id string, status bool) error {
+	// Menggunakan Map untuk update field tertentu saja demi performa
+	return config.DB.Model(&models.Sample{}).Where("sample_id = ?", id).Update("is_reviewed", status).Error
+}
