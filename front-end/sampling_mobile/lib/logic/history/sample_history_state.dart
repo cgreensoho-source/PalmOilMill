@@ -13,12 +13,19 @@ class SampleHistoryInitial extends SampleHistoryState {}
 class SampleHistoryLoading extends SampleHistoryState {}
 
 class SampleHistoryLoaded extends SampleHistoryState {
-  final List<SampleModel> samples;
+  final List<SampleModel>
+  samples; // Data yang sudah difilter (ditampilkan di UI)
+  final List<SampleModel> allSamples; // Data mentah dari API (cache lokal)
+  final String currentFilter; // Menyimpan status filter aktif
 
-  const SampleHistoryLoaded(this.samples);
+  const SampleHistoryLoaded({
+    required this.samples,
+    required this.allSamples,
+    this.currentFilter = "Semua",
+  });
 
   @override
-  List<Object> get props => [samples];
+  List<Object> get props => [samples, allSamples, currentFilter];
 }
 
 class SampleHistoryError extends SampleHistoryState {
