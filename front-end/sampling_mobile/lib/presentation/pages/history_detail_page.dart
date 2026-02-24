@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/sample_model.dart';
 import '../../data/repositories/sample_repository.dart';
-import '../../logic/auth/auth_bloc.dart';
-import '../../logic/auth/auth_state.dart';
 
 class HistoryDetailPage extends StatefulWidget {
   final SampleModel sample;
@@ -15,8 +13,8 @@ class HistoryDetailPage extends StatefulWidget {
 }
 
 class _HistoryDetailPageState extends State<HistoryDetailPage> {
-  // Jalur API sesuai bukti Postman
-  final String apiBaseUrl = 'http://103.49.239.94:8082/api/v1';
+  // Base URL Server untuk akses file statis publik
+  final String serverBaseUrl = 'http://103.49.239.94:8082';
 
   late Future<Map<String, dynamic>> _detailFuture;
 
@@ -45,16 +43,6 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Endpoint gambar di dalam /api/v1 sesuai Postman
-    final String targetImageUrl = '$apiBaseUrl/images/${widget.sample.id}';
-
-    // Ambil token dari AuthBloc untuk otentikasi
-    final authState = context.read<AuthBloc>().state;
-    String userToken = "";
-    if (authState is AuthAuthenticated) {
-      userToken = authState.user.token;
-    }
-
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
@@ -68,12 +56,36 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _detailFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
+          }
+          if (snapshot.hasError) {
             return Center(child: Text("Gagal memuat: ${snapshot.error}"));
+          }
 
-          final data = snapshot.data ?? {};
+          // Menangani jika repositori mengembalikan JSON utuh (dengan root "data")
+          // atau langsung mengembalikan isi "data"
+          final rawData = snapshot.data ?? {};
+          final data = rawData.containsKey('data') && rawData['data'] is Map
+              ? rawData['data']
+              : rawData;
+
+          // LOGIKA EKSTRAKSI ARRAY GAMBAR
+          String? imagePath;
+          if (data['images'] != null &&
+              data['images'] is List &&
+              (data['images'] as List).isNotEmpty) {
+            imagePath = data['images'][0]['image_path'];
+          }
+
+          String fullImageUrl = "";
+          if (imagePath != null && imagePath.isNotEmpty) {
+            String cleanPath = imagePath.replaceAll('\\', '/').trim();
+            fullImageUrl = cleanPath.startsWith('/')
+                ? '$serverBaseUrl$cleanPath'
+                : '$serverBaseUrl/$cleanPath';
+          }
+
           final dt = _formatDateTime(
             data['created_at']?.toString() ?? widget.sample.date,
           );
@@ -84,7 +96,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // BOX 1: INFO UTAMA (Waktu & Tanggal)
+                // BOX 1: INFO UTAMA
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -111,7 +123,6 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                         ),
                         const Divider(height: 24),
                         _buildRow("Waktu", dt['time']!),
-                        const SizedBox(height: 8),
                         _buildRow("Tanggal", dt['date']!),
                       ],
                     ),
@@ -119,7 +130,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // BOX 2: KONDISI (Box Terpisah sesuai permintaan)
+                // BOX 2: KONDISI
                 const Padding(
                   padding: EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(
@@ -146,7 +157,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // BOX 3: GAMBAR (Paling Bawah)
+                // BOX 3: GAMBAR
                 const Text(
                   "Foto Lampiran",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -157,13 +168,20 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                   child: Container(
                     color: Colors.white,
                     width: double.infinity,
-                    child: Image.network(
-                      targetImageUrl,
-                      // WAJIB: Gunakan Token sesuai bukti Postman
-                      headers: {"Authorization": "Bearer $userToken"},
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => _buildImageError(),
-                    ),
+                    constraints: const BoxConstraints(minHeight: 200),
+                    child: fullImageUrl.isEmpty
+                        ? _buildImageError(
+                            "Data gambar tidak ditemukan pada sampel ini.",
+                          )
+                        : Image.network(
+                            fullImageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, stack) {
+                              return _buildImageError(
+                                "Gagal memuat: $fullImageUrl",
+                              );
+                            },
+                          ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -175,42 +193,42 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     );
   }
 
-  Widget _buildRow(String label, String val) => Row(
-    children: [
-      SizedBox(
-        width: 80,
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontWeight: FontWeight.bold,
+  Widget _buildRow(String label, String val) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-      const Text(": "),
-      Text(
-        val,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-      ),
-    ],
+        const Text(": "),
+        Text(
+          val,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+      ],
+    ),
   );
 
-  Widget _buildImageError() => Container(
-    height: 250,
-    width: double.infinity,
-    color: Colors.white,
-    child: const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.broken_image, size: 50, color: Colors.grey),
-          SizedBox(height: 8),
-          Text(
-            "Foto tidak tersedia (Cek Token/ID)",
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
+  Widget _buildImageError(String msg) => Container(
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+        const SizedBox(height: 8),
+        Text(
+          msg,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.grey, fontSize: 11),
+        ),
+      ],
     ),
   );
 }

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import '../../core/database/db_helper.dart';
 import '../../data/datasources/sample_remote_datasource.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';

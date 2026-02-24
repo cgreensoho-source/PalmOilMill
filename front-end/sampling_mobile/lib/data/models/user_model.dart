@@ -2,7 +2,7 @@ class UserModel {
   final int userId;
   final String nip;
   final String username;
-  final String role; // Diambil dari roles[0]['role_name']
+  final String role;
   final String token;
   final String? email;
   final String? phone;
@@ -20,10 +20,11 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, {String? token}) {
-    // Navigasi ke array roles sesuai bukti Postman
+    // Ekstraksi array roles sesuai format JSON backend
     String extractedRole = "OPERATOR";
     if (json['roles'] != null && (json['roles'] as List).isNotEmpty) {
-      extractedRole = json['roles'][0]['role_name'] ?? "OPERATOR";
+      extractedRole =
+          json['roles'][0]['role_name']?.toString().toUpperCase() ?? "OPERATOR";
     }
 
     return UserModel(
@@ -33,11 +34,12 @@ class UserModel {
       role: extractedRole,
       token: token ?? '',
       email: json['email'],
-      phone: json['phone'],
+      phone: json['phone']?.toString(),
       gender: json['gender'],
     );
   }
 
+  // Metode krusial yang hilang untuk serialisasi data lokal
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,

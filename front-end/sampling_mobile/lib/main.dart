@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sampling_mobile/presentation/pages/dashboard_page.dart';
-import 'package:sampling_mobile/presentation/pages/sample_form_page.dart';
 import 'core/api/api_client.dart';
 import 'core/database/db_helper.dart';
 import 'data/datasources/auth_remote_datasource.dart';
@@ -11,9 +9,12 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/sample_repository.dart';
 import 'data/repositories/station_repository.dart';
 import 'logic/auth/auth_bloc.dart';
+import 'logic/auth/auth_event.dart';
+import 'logic/auth/auth_state.dart';
 import 'logic/sample/sample_bloc.dart';
 import 'logic/history/sample_history_bloc.dart';
 import 'presentation/pages/login_page.dart';
+import 'presentation/pages/main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +59,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TAMBAHAN WAJIB: MultiRepositoryProvider mendaftarkan repositori ke context
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider.value(value: authRepository),
@@ -68,7 +68,9 @@ class MyApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (context) => AuthBloc(authRepository: authRepository),
+            // TRIGGER APP STARTED DI SINI
+            create: (context) =>
+                AuthBloc(authRepository: authRepository)..add(AppStarted()),
           ),
           BlocProvider(
             create: (context) => SampleBloc(
@@ -85,9 +87,38 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Sampling App',
           theme: ThemeData(primarySwatch: Colors.green, useMaterial3: false),
-          home: const LoginPage(),
+          // GUNAKAN ROUTER OTOMATIS, BUKAN HALAMAN LOGIN STATIS
+          home: const AppRouter(),
         ),
       ),
+    );
+  }
+}
+
+// Komponen penengah untuk menentukan rute berdasarkan state
+class AppRouter extends StatelessWidget {
+  const AppRouter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthAuthenticated) {
+          // Token ditemukan di lokal, langsung operasional
+          return const MainPage();
+        }
+
+        if (state is AuthUnauthenticated || state is AuthError) {
+          // Tidak ada token atau error, arahkan ke login
+          return const LoginPage();
+        }
+
+        // Tampilan Splash Screen murni saat mengekstrak data dari SharedPreferences
+        return const Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(child: CircularProgressIndicator(color: Colors.green)),
+        );
+      },
     );
   }
 }
