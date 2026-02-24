@@ -16,7 +16,8 @@ class DBHelper {
   }
 
   Future<Database> _initDB() async {
-    String path = join(await getDatabasesPath(), 'sampling_offline.db');
+    // NAMA FILE DIUBAH UNTUK MEMAKSA PEMBUATAN ULANG DATABASE
+    String path = join(await getDatabasesPath(), 'sampling_offline_v2.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
@@ -31,7 +32,6 @@ class DBHelper {
     ''');
 
     // 2. Tabel Samples (Antrean Offline)
-    // Kita tambah kolom 'is_synced' untuk membedakan mana yang sudah masuk ke Backend Go kamu
     await db.execute('''
       CREATE TABLE offline_samples (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,16 +39,17 @@ class DBHelper {
         station_id INTEGER,
         sample_name TEXT,
         condition TEXT,
+        user_coordinate TEXT, 
         created_at TEXT,
         is_synced INTEGER DEFAULT 0
       )
     ''');
 
-    // 3. Tabel Images (Multiple images per sample sesuai aturanmu)
+    // 3. Tabel Images (Multiple images per sample)
     await db.execute('''
       CREATE TABLE offline_images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sample_local_id INTEGER, -- FK ke offline_samples(id)
+        sample_local_id INTEGER, 
         image_path TEXT,
         user_id INTEGER,
         FOREIGN KEY (sample_local_id) REFERENCES offline_samples (id) ON DELETE CASCADE

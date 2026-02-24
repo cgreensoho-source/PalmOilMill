@@ -44,10 +44,8 @@ class SampleRemoteDataSource {
 
   Future<List<dynamic>> getSampleHistory() async {
     try {
-      // 1. Tentukan rute default untuk keamanan (Operator)
       String endpoint = '/samples/my';
 
-      // 2. Ekstraksi Role dari sesi lokal
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString('user_session_data');
 
@@ -56,13 +54,11 @@ class SampleRemoteDataSource {
         final String role =
             userMap['role']?.toString().toUpperCase() ?? 'OPERATOR';
 
-        // 3. Override rute jika terdeteksi otorisasi Admin
         if (role == 'ADMIN') {
           endpoint = '/samples';
         }
       }
 
-      // 4. Eksekusi request dinamis
       final response = await apiClient.dio.get(endpoint);
 
       if (response.data is Map) {
@@ -78,27 +74,65 @@ class SampleRemoteDataSource {
 
   Future<Map<String, dynamic>> getSampleDetail(int id) async {
     try {
-      // 1. Tentukan rute detail default untuk Operator
-      String endpoint = '/samples/my/$id';
-
-      // 2. Ekstraksi Role dari sesi lokal
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString('user_session_data');
+      String role = 'OPERATOR';
 
       if (userJson != null && userJson.isNotEmpty) {
         final Map<String, dynamic> userMap = jsonDecode(userJson);
-        final String role =
-            userMap['role']?.toString().toUpperCase() ?? 'OPERATOR';
-
-        // 3. Override rute detail jika Admin
-        if (role == 'ADMIN') {
-          endpoint = '/samples/$id';
-        }
+        role = userMap['role']?.toString().toUpperCase() ?? 'OPERATOR';
       }
 
-      // 4. Eksekusi request dinamis
-      final response = await apiClient.dio.get(endpoint);
-      return response.data['data'] ?? response.data;
+      // LOGIKA ADMIN
+      if (role == 'ADMIN') {
+        final response = await apiClient.dio.get('/samples/$id');
+        final dynamic rawData = response.data;
+
+        if (rawData is Map) {
+          if (rawData.containsKey('data')) return rawData['data'];
+          return rawData as Map<String, dynamic>;
+        }
+        throw Exception("Format balasan Admin tidak dikenali.");
+      }
+      // LOGIKA OPERATOR DENGAN EKSTRAKSI AGRESIF
+      else {
+        final response = await apiClient.dio.get('/samples/my');
+        final dynamic rawData = response.data;
+
+        List<dynamic> listData = [];
+        if (rawData is Map) {
+          listData =
+              rawData['data'] ?? rawData['samples'] ?? rawData['items'] ?? [];
+        } else if (rawData is List) {
+          listData = rawData;
+        }
+
+        if (listData.isEmpty) {
+          throw Exception(
+            "Riwayat kosong. Server tidak mengembalikan data apa pun.",
+          );
+        }
+
+        // Pencarian Paksa: Konversi semua variabel ke String agar perbandingan selalu setara
+        final detailData = listData.firstWhere((element) {
+          if (element is Map) {
+            final elementId =
+                element['id'] ?? element['sample_id'] ?? element['ID'];
+            if (elementId != null) {
+              return elementId.toString().trim() == id.toString().trim();
+            }
+          }
+          return false;
+        }, orElse: () => null);
+
+        if (detailData != null) {
+          return detailData as Map<String, dynamic>;
+        } else {
+          throw Exception(
+            "Gagal merender detail: ID Sampel ($id) tidak ditemukan di dalam respons array server.",
+          );
+        }
+      }
     } on DioException catch (e) {
       throw DioHandler.parseError(e);
     }
