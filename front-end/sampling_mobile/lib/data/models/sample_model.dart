@@ -1,26 +1,39 @@
 class SampleModel {
-  final int? userId;
-  final int? stationId;
+  final int id;
   final String sampleName;
   final String condition;
-  final List<String> imagePaths; // List path file dari kamera
+  final String date;
 
   SampleModel({
-    this.userId,
-    this.stationId,
+    required this.id,
     required this.sampleName,
     required this.condition,
-    required this.imagePaths,
+    required this.date,
   });
 
-  // Karena upload sample pakai Multipart (Form Data),
-  // kita tidak butuh toJson standar, tapi butuh Map untuk FormData.
-  Map<String, dynamic> toMap() {
-    return {
-      'user_id': userId,
-      'station_id': stationId,
-      'sample_name': sampleName,
-      'condition': condition,
-    };
+  factory SampleModel.fromJson(Map<String, dynamic> json) {
+    // 1. Ekstraksi Agresif untuk menangkap ID dari berbagai variasi key backend Go
+    final rawId =
+        json['id'] ?? json['sample_id'] ?? json['ID'] ?? json['sampleId'] ?? 0;
+    final int parsedId = rawId is int
+        ? rawId
+        : int.tryParse(rawId.toString()) ?? 0;
+
+    // 2. Debugger Logika: Memaksa terminal menampilkan ID yang berhasil ditangkap
+    print(
+      "--- DEBUG MODEL: Raw ID dari JSON = $rawId | Parsed ID = $parsedId ---",
+    );
+
+    return SampleModel(
+      id: parsedId,
+      sampleName:
+          json['sample_name']?.toString() ??
+          json['nama_sampel']?.toString() ??
+          'Tidak Diketahui',
+      condition:
+          json['condition']?.toString() ?? json['kondisi']?.toString() ?? '-',
+      date:
+          json['created_at']?.toString() ?? json['tanggal']?.toString() ?? '-',
+    );
   }
 }

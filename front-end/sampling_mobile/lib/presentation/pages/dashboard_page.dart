@@ -49,10 +49,7 @@ class _DashboardPageState extends State<DashboardPage> {
         firstImagePath = imageRecords.first['image_path'] as String?;
       }
 
-      enrichedSamples.add({
-        ...sample,
-        'first_image_path': firstImagePath,
-      });
+      enrichedSamples.add({...sample, 'first_image_path': firstImagePath});
     }
 
     if (mounted) {
@@ -70,7 +67,10 @@ class _DashboardPageState extends State<DashboardPage> {
     int previousCount = _pendingCount;
 
     try {
-      final syncService = SyncService(SampleRemoteDataSource(ApiClient()), DBHelper());
+      final syncService = SyncService(
+        SampleRemoteDataSource(ApiClient()),
+        DBHelper(),
+      );
       await syncService.syncData();
 
       await _checkPendingData();
@@ -93,7 +93,9 @@ class _DashboardPageState extends State<DashboardPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text("Gagal mengunggah! Pastikan internet menyala."),
+              content: const Text(
+                "Gagal mengunggah! Pastikan internet menyala.",
+              ),
               backgroundColor: Colors.red.shade700,
             ),
           );
@@ -104,7 +106,9 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("Gagal upload: Server menolak atau jaringan bermasalah."),
+            content: const Text(
+              "Gagal upload: Server menolak atau jaringan bermasalah.",
+            ),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -144,8 +148,22 @@ class _DashboardPageState extends State<DashboardPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("MILLTRACK HPI", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.2)),
-                Text("Halo, ${firstName.toUpperCase()}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.white70)),
+                const Text(
+                  "MILLTRACK HPI",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                Text(
+                  "Halo, ${firstName.toUpperCase()}",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.white70,
+                  ),
+                ),
               ],
             );
           },
@@ -155,7 +173,12 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.only(right: 16.0),
             child: InkWell(
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const UserProfilePage()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UserProfilePage(),
+                  ),
+                );
               },
               customBorder: const CircleBorder(),
               child: const CircleAvatar(
@@ -177,7 +200,9 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             children: [
               Material(
-                color: _pendingCount > 0 ? Colors.orange.shade600 : Colors.grey.shade300,
+                color: _pendingCount > 0
+                    ? Colors.orange.shade600
+                    : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(32),
                 elevation: _pendingCount > 0 ? 8 : 0,
                 shadowColor: Colors.orange.shade200,
@@ -194,20 +219,29 @@ class _DashboardPageState extends State<DashboardPage> {
                           const SizedBox(
                             height: 60,
                             width: 60,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 6),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 6,
+                            ),
                           )
                         else
                           Icon(
-                            _pendingCount > 0 ? Icons.cloud_upload_rounded : Icons.cloud_done_rounded,
+                            _pendingCount > 0
+                                ? Icons.cloud_upload_rounded
+                                : Icons.cloud_done_rounded,
                             size: 60,
-                            color: _pendingCount > 0 ? Colors.white : Colors.grey.shade500,
+                            color: _pendingCount > 0
+                                ? Colors.white
+                                : Colors.grey.shade500,
                           ),
                         const SizedBox(height: 12),
                         Text(
                           _pendingCount > 0 ? "UNGGAH DATA" : "SISTEM SINKRON",
                           style: TextStyle(
                             fontSize: 20,
-                            color: _pendingCount > 0 ? Colors.white : Colors.grey.shade600,
+                            color: _pendingCount > 0
+                                ? Colors.white
+                                : Colors.grey.shade600,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2.0,
                           ),
@@ -219,19 +253,32 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: _pendingCount > 0 ? Colors.orange.shade50 : Colors.green.shade50,
+                  color: _pendingCount > 0
+                      ? Colors.orange.shade50
+                      : Colors.green.shade50,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _pendingCount > 0 ? Colors.orange.shade200 : Colors.green.shade200),
+                  border: Border.all(
+                    color: _pendingCount > 0
+                        ? Colors.orange.shade200
+                        : Colors.green.shade200,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _pendingCount > 0 ? Icons.schedule_rounded : Icons.check_circle_outline,
+                      _pendingCount > 0
+                          ? Icons.schedule_rounded
+                          : Icons.check_circle_outline,
                       size: 16,
-                      color: _pendingCount > 0 ? Colors.orange.shade800 : Colors.green.shade800,
+                      color: _pendingCount > 0
+                          ? Colors.orange.shade800
+                          : Colors.green.shade800,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -240,7 +287,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           : "Tidak ada antrean data lokal",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: _pendingCount > 0 ? Colors.orange.shade800 : Colors.green.shade800,
+                        color: _pendingCount > 0
+                            ? Colors.orange.shade800
+                            : Colors.green.shade800,
                       ),
                     ),
                   ],
@@ -255,11 +304,15 @@ class _DashboardPageState extends State<DashboardPage> {
                     itemBuilder: (context, index) {
                       final sample = _pendingSamples[index];
                       final imagePath = sample['first_image_path'] as String?;
-                      final timeString = _formatDateTime(sample['created_at']?.toString());
+                      final timeString = _formatDateTime(
+                        sample['created_at']?.toString(),
+                      );
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 2,
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
@@ -267,19 +320,24 @@ class _DashboardPageState extends State<DashboardPage> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: imagePath != null && File(imagePath).existsSync()
+                                child:
+                                    imagePath != null &&
+                                        File(imagePath).existsSync()
                                     ? Image.file(
-                                  File(imagePath),
-                                  width: 70,
-                                  height: 70,
-                                  fit: BoxFit.cover,
-                                )
+                                        File(imagePath),
+                                        width: 70,
+                                        height: 70,
+                                        fit: BoxFit.cover,
+                                      )
                                     : Container(
-                                  width: 70,
-                                  height: 70,
-                                  color: Colors.grey.shade200,
-                                  child: Icon(Icons.image_not_supported, color: Colors.grey.shade400),
-                                ),
+                                        width: 70,
+                                        height: 70,
+                                        color: Colors.grey.shade200,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -287,26 +345,41 @@ class _DashboardPageState extends State<DashboardPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      sample['sample_name']?.toString() ?? 'Sampel Tidak Bernama',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      sample['sample_name']?.toString() ??
+                                          'Sampel Tidak Bernama',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       sample['condition']?.toString() ?? '-',
-                                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 13,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade500),
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 14,
+                                          color: Colors.grey.shade500,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           timeString,
-                                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w500),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade500,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ],
                                     ),

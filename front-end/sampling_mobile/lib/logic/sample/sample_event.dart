@@ -40,3 +40,5 @@ class SampleSubmitted extends SampleEvent {
     required this.isOnline,
   });
 }
+
+class FetchSampleHistoryTriggered extends SampleEvent {}

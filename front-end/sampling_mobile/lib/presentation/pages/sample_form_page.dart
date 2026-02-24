@@ -40,7 +40,16 @@ class _SampleFormPageState extends State<SampleFormPage> {
       if (authState is AuthAuthenticated) {
         _currentUser = authState.user;
       } else {
-        _currentUser = UserModel(userId: 1, nip: "-", username: "Guest", email: "", phone: "", gender: "");
+        _currentUser = UserModel(
+          userId: 1,
+          nip: "-",
+          username: "Guest",
+          role: "GUEST", // PERBAIKAN 1: Menambahkan parameter wajib role
+          token: "", // PERBAIKAN 1: Menambahkan parameter wajib token
+          email: "",
+          phone: "",
+          gender: "",
+        );
       }
 
       if (sampleState.validatedStationId != null) {
@@ -136,16 +145,30 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 _buildSectionHeader(Icons.info_outline, "Data Perekaman"),
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        _buildInfoRow(Icons.person, "Petugas", _currentUser.username),
+                        _buildInfoRow(
+                          Icons.person,
+                          "Petugas",
+                          _currentUser.username,
+                        ),
                         const Divider(height: 20),
-                        _buildInfoRow(Icons.location_on, "Lokasi Stasiun", _stationName),
+                        _buildInfoRow(
+                          Icons.location_on,
+                          "Lokasi Stasiun",
+                          _stationName,
+                        ),
                         const Divider(height: 20),
-                        _buildInfoRow(Icons.gps_fixed, "Koordinat", _coordinates),
+                        _buildInfoRow(
+                          Icons.gps_fixed,
+                          "Koordinat",
+                          _coordinates,
+                        ),
                       ],
                     ),
                   ),
@@ -156,7 +179,9 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 _buildSectionHeader(Icons.edit_document, "Detail Sampel"),
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -165,12 +190,18 @@ class _SampleFormPageState extends State<SampleFormPage> {
                           controller: _nameController,
                           decoration: InputDecoration(
                             labelText: "Nama / Kode Sampel",
-                            prefixIcon: Icon(Icons.science, color: primaryColor),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            prefixIcon: Icon(
+                              Icons.science,
+                              color: primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
                           ),
-                          validator: (value) => value!.isEmpty ? 'Wajib diisi' : null,
+                          validator: (value) =>
+                              value!.isEmpty ? 'Wajib diisi' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -183,11 +214,14 @@ class _SampleFormPageState extends State<SampleFormPage> {
                               padding: const EdgeInsets.only(bottom: 40),
                               child: Icon(Icons.notes, color: primaryColor),
                             ),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
                           ),
-                          validator: (value) => value!.isEmpty ? 'Wajib diisi' : null,
+                          validator: (value) =>
+                              value!.isEmpty ? 'Wajib diisi' : null,
                         ),
                       ],
                     ),
@@ -199,13 +233,21 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 _buildSectionHeader(Icons.camera_alt, "Dokumentasi Lapangan"),
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Ambil foto bukti fisik (Wajib).", style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                        Text(
+                          "Ambil foto bukti fisik (Wajib).",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         BlocBuilder<SampleBloc, SampleState>(
                           builder: (context, state) {
@@ -220,17 +262,35 @@ class _SampleFormPageState extends State<SampleFormPage> {
                                       onTap: _takePhoto,
                                       child: Container(
                                         width: 100,
-                                        margin: const EdgeInsets.only(right: 12),
+                                        margin: const EdgeInsets.only(
+                                          right: 12,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.green.shade50,
-                                          border: Border.all(color: Colors.green.shade300, width: 2),
-                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.green.shade300,
+                                            width: 2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.add_a_photo, size: 32, color: primaryColor),
-                                            Text("Tambah", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                            Icon(
+                                              Icons.add_a_photo,
+                                              size: 32,
+                                              color: primaryColor,
+                                            ),
+                                            Text(
+                                              "Tambah",
+                                              style: TextStyle(
+                                                color: primaryColor,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -240,20 +300,36 @@ class _SampleFormPageState extends State<SampleFormPage> {
                                     children: [
                                       Container(
                                         width: 100,
-                                        margin: const EdgeInsets.only(right: 12),
+                                        margin: const EdgeInsets.only(
+                                          right: 12,
+                                        ),
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          image: DecorationImage(image: FileImage(state.capturedImages[index]), fit: BoxFit.cover),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          image: DecorationImage(
+                                            image: FileImage(
+                                              state.capturedImages[index],
+                                            ),
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
                                       ),
                                       Positioned(
-                                        right: 12, top: 0,
+                                        right: 12,
+                                        top: 0,
                                         child: InkWell(
-                                          onTap: () => context.read<SampleBloc>().add(PhotoRemoved(index)),
+                                          onTap: () => context
+                                              .read<SampleBloc>()
+                                              .add(PhotoRemoved(index)),
                                           child: Container(
                                             padding: const EdgeInsets.all(4),
                                             color: Colors.red,
-                                            child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                            child: const Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -279,40 +355,58 @@ class _SampleFormPageState extends State<SampleFormPage> {
                       height: 54,
                       child: ElevatedButton.icon(
                         icon: state.isLoading
-                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : const Icon(Icons.cloud_upload),
                         label: Text(
-                          state.isLoading ? "MEMPROSES..." : "SIMPAN & KIRIM LAPORAN",
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          state.isLoading
+                              ? "MEMPROSES..."
+                              : "SIMPAN & KIRIM LAPORAN",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor: Colors.grey.shade400,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: state.isLoading || !isReady
                             ? null
                             : () async {
-                          if (_formKey.currentState!.validate()) {
-                            // 1. Cek Koneksi Internet (Diperbaiki)
-                            final connectivityResult = await Connectivity().checkConnectivity();
-                            bool hasInternet = connectivityResult != ConnectivityResult.none;
+                                if (_formKey.currentState!.validate()) {
+                                  // 1. Cek Koneksi Internet (Diperbaiki)
+                                  final connectivityResult =
+                                      await Connectivity().checkConnectivity();
+                                  bool hasInternet =
+                                      connectivityResult !=
+                                      ConnectivityResult.none;
 
-                            // 2. Tembak Event
-                            if (context.mounted) {
-                              context.read<SampleBloc>().add(
-                                SampleSubmitted(
-                                  userId: _currentUser.userId,
-                                  stationId: _stationId,
-                                  sampleName: _nameController.text,
-                                  condition: _conditionController.text,
-                                  isOnline: hasInternet, // Mode diputuskan otomatis!
-                                ),
-                              );
-                            }
-                          }
-                        },
+                                  // 2. Tembak Event
+                                  if (context.mounted) {
+                                    context.read<SampleBloc>().add(
+                                      SampleSubmitted(
+                                        userId: _currentUser.userId,
+                                        stationId: _stationId,
+                                        sampleName: _nameController.text,
+                                        condition: _conditionController.text,
+                                        isOnline:
+                                            hasInternet, // Mode diputuskan otomatis!
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                       ),
                     );
                   },
@@ -333,7 +427,14 @@ class _SampleFormPageState extends State<SampleFormPage> {
         children: [
           Icon(icon, size: 20, color: Colors.grey.shade700),
           const SizedBox(width: 8),
-          Text(title.toUpperCase(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
         ],
       ),
     );
@@ -349,9 +450,23 @@ class _SampleFormPageState extends State<SampleFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
             ],
           ),
         ),
