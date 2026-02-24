@@ -43,10 +43,12 @@ class SyncService {
 
         // 4. Kirim ke Backend Go (Endpoint /samples)
         await remoteDataSource.uploadSample(
-          userId: sampleMap['user_id'],
-          stationId: sampleMap['station_id'],
-          sampleName: sampleMap['sample_name'],
-          condition: sampleMap['condition'],
+          userId: sampleMap['user_id'] as int,
+          stationId: sampleMap['station_id'] as int,
+          sampleName: sampleMap['sample_name'].toString(),
+          condition: sampleMap['condition'].toString(),
+          userCoordinate: (sampleMap['user_coordinate'] ?? '-')
+              .toString(), // WAJIB DITAMBAHKAN
           images: images,
         );
 

@@ -29,10 +29,9 @@ class _SampleFormPageState extends State<SampleFormPage> {
   late UserModel _currentUser;
   late int _stationId;
   late String _stationName;
-  late String _coordinates; // Format expected: "latitude, longitude"
+  late String _coordinates;
   bool _isInitialized = false;
 
-  // State Manajemen GPS Aktual & Jarak
   Position? _userPosition;
   bool _isLoadingInitialLocation = false;
   String _locationStatus = "";
@@ -40,7 +39,7 @@ class _SampleFormPageState extends State<SampleFormPage> {
   bool _isInRange = false;
   bool _hasValidTarget = false;
 
-  bool _isFetchingLocation = false; // Kunci submit UI
+  bool _isFetchingLocation = false;
 
   @override
   void didChangeDependencies() {
@@ -76,7 +75,7 @@ class _SampleFormPageState extends State<SampleFormPage> {
       }
 
       _isInitialized = true;
-      _fetchInitialLocation(); // Langsung cari satelit saat halaman dibuka
+      _fetchInitialLocation();
     }
   }
 
@@ -87,7 +86,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
     super.dispose();
   }
 
-  // --- LOGIKA PERHITUNGAN RADIUS 50 METER ---
   Future<void> _fetchInitialLocation() async {
     setState(() {
       _isLoadingInitialLocation = true;
@@ -109,21 +107,20 @@ class _SampleFormPageState extends State<SampleFormPage> {
           hasValidTarget = true;
         }
       } catch (e) {
-        // Format titik target dari database salah atau kosong
+        // Abaikan format salah
       }
 
       double distance = 0.0;
       bool inRange = false;
 
       if (hasValidTarget) {
-        // Kalkulasi jarak menggunakan formula Haversine bawaan Geolocator
         distance = Geolocator.distanceBetween(
           targetLat,
           targetLng,
           posisi.latitude,
           posisi.longitude,
         );
-        inRange = distance <= 50.0; // Validasi radius maksimal 50 meter
+        inRange = distance <= 50.0;
       }
 
       if (mounted) {
@@ -163,7 +160,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
   ) async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validasi Lapis Dua Keamanan
     if (_userPosition == null || !_isInRange) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -179,9 +175,9 @@ class _SampleFormPageState extends State<SampleFormPage> {
     setState(() => _isFetchingLocation = true);
 
     try {
-      // Gunakan posisi yang sudah berhasil divalidasi dan dihitung jaraknya
-      final double latitude = _userPosition!.latitude;
-      final double longitude = _userPosition!.longitude;
+      // FORMAT STRING KORDINAT SESUAI SWAGGER UI
+      final String userCoordinate =
+          "${_userPosition!.latitude}, ${_userPosition!.longitude}";
 
       final connectivityResult = await Connectivity().checkConnectivity();
       bool hasInternet = connectivityResult != ConnectivityResult.none;
@@ -193,10 +189,8 @@ class _SampleFormPageState extends State<SampleFormPage> {
             stationId: _stationId,
             sampleName: _nameController.text,
             condition: _conditionController.text,
+            userCoordinate: userCoordinate, // ATRIBUT BARU
             isOnline: hasInternet,
-            // Jika backend Anda butuh parameter lokasi, uncomment ini:
-            // lat: latitude,
-            // lng: longitude,
           ),
         );
       }
@@ -259,7 +253,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // --- KARTU 1: INFO SISTEM & VALIDASI RADIUS ---
                 _buildSectionHeader(Icons.info_outline, "Data Perekaman"),
                 Card(
                   elevation: 2,
@@ -288,7 +281,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
                           _coordinates,
                         ),
                         const Divider(height: 20),
-                        // UI Dinamis Validasi Radius
                         _buildUserLocationStatus(),
                       ],
                     ),
@@ -296,7 +288,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // --- KARTU 2: FORM INPUT ---
                 _buildSectionHeader(Icons.edit_document, "Detail Sampel"),
                 Card(
                   elevation: 2,
@@ -350,7 +341,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // --- KARTU 3: DOKUMENTASI FOTO ---
                 _buildSectionHeader(Icons.camera_alt, "Dokumentasi Lapangan"),
                 Card(
                   elevation: 2,
@@ -467,14 +457,12 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 ),
                 const SizedBox(height: 32),
 
-                // --- TOMBOL SUBMIT ---
                 BlocBuilder<SampleBloc, SampleState>(
                   builder: (context, state) {
                     final bool isReady = state.capturedImages.isNotEmpty;
                     final bool isProcessing =
                         state.isLoading || _isFetchingLocation;
 
-                    // Kunci strategi operasional: Submit ditolak jika di luar jangkauan
                     final bool isSubmitAllowed =
                         isReady && !_isLoadingInitialLocation && _isInRange;
 
@@ -508,7 +496,7 @@ class _SampleFormPageState extends State<SampleFormPage> {
                         ),
                         onPressed: isSubmitAllowed && !isProcessing
                             ? () => _submitWithLocation(context, state)
-                            : null, // Blokir jika di luar radius
+                            : null,
                       ),
                     );
                   },
@@ -522,7 +510,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
     );
   }
 
-  // --- WIDGET LOKASI AKTUAL & NOTIFIKASI RADIUS ---
   Widget _buildUserLocationStatus() {
     if (_isLoadingInitialLocation) {
       return Row(
@@ -554,7 +541,7 @@ class _SampleFormPageState extends State<SampleFormPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
-            onPressed: _fetchInitialLocation, // Tombol retry lokasi manual
+            onPressed: _fetchInitialLocation,
           ),
         ],
       );
@@ -609,8 +596,7 @@ class _SampleFormPageState extends State<SampleFormPage> {
                 ),
               ),
               InkWell(
-                onTap:
-                    _fetchInitialLocation, // Tombol refresh jika pengguna bergeser
+                onTap: _fetchInitialLocation,
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
                   child: Icon(

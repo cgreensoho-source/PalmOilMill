@@ -14,6 +14,7 @@ class SampleRepository {
     required int stationId,
     required String sampleName,
     required String condition,
+    required String userCoordinate, // ATRIBUT BARU WAJIB
     required List<File> images,
     required bool isOnline,
   }) async {
@@ -24,15 +25,18 @@ class SampleRepository {
           stationId: stationId,
           sampleName: sampleName,
           condition: condition,
+          userCoordinate: userCoordinate, // LEMPAR KE API
           images: images,
         );
         return "Data berhasil dikirim langsung ke server";
       } catch (e) {
+        // Fallback jika API gangguan/time-out
         final sampleId = await dbHelper.insert('offline_samples', {
           'user_id': userId,
           'station_id': stationId,
           'sample_name': sampleName,
           'condition': condition,
+          'user_coordinate': userCoordinate, // SIMPAN KE SQLITE
           'created_at': DateTime.now().toIso8601String(),
           'is_synced': 0,
         });
@@ -47,11 +51,13 @@ class SampleRepository {
         return "Server gangguan. Data dialihkan ke lokal.";
       }
     } else {
+      // Offline murni
       final sampleId = await dbHelper.insert('offline_samples', {
         'user_id': userId,
         'station_id': stationId,
         'sample_name': sampleName,
         'condition': condition,
+        'user_coordinate': userCoordinate, // SIMPAN KE SQLITE
         'created_at': DateTime.now().toIso8601String(),
         'is_synced': 0,
       });
@@ -76,7 +82,6 @@ class SampleRepository {
     }
   }
 
-  // FUNGSI BARU: Mengambil detail spesifik
   Future<Map<String, dynamic>> getSampleDetail(int id) async {
     try {
       return await remoteDataSource.getSampleDetail(id);
