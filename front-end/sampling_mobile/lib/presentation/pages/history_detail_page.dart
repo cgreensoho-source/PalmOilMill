@@ -63,8 +63,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
             return Center(child: Text("Gagal memuat: ${snapshot.error}"));
           }
 
-          // Menangani jika repositori mengembalikan JSON utuh (dengan root "data")
-          // atau langsung mengembalikan isi "data"
+          // Ekstraksi Root Data
           final rawData = snapshot.data ?? {};
           final data = rawData.containsKey('data') && rawData['data'] is Map
               ? rawData['data']
@@ -86,17 +85,33 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                 : '$serverBaseUrl/$cleanPath';
           }
 
+          // EKSTRAKSI WAKTU & KONDISI
           final dt = _formatDateTime(
             data['created_at']?.toString() ?? widget.sample.date,
           );
           final String kondisiStr = data['condition']?.toString() ?? '-';
+
+          // EKSTRAKSI LOKASI TARGET
+          String lokasiTarget = "Tidak tersedia";
+          if (data['station'] != null &&
+              data['station']['coordinate'] != null) {
+            lokasiTarget = data['station']['coordinate'].toString();
+          }
+
+          // EKSTRAKSI LOKASI AKTUAL/USER
+          String lokasiUser = "Tidak direkam";
+          if (data['latitude'] != null && data['longitude'] != null) {
+            lokasiUser = "${data['latitude']}, ${data['longitude']}";
+          } else if (data['user_coordinate'] != null) {
+            lokasiUser = data['user_coordinate'].toString();
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // BOX 1: INFO UTAMA
+                // BOX 1: INFO UTAMA DENGAN LOKASI
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -124,13 +139,16 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                         const Divider(height: 24),
                         _buildRow("Waktu", dt['time']!),
                         _buildRow("Tanggal", dt['date']!),
+                        // SizedBox dihapus di sini agar jaraknya sama dengan baris lain
+                        _buildRow("Lok. Target", lokasiTarget),
+                        _buildRow("Lok. Aktual", lokasiUser),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // BOX 2: KONDISI
+                // BOX 2: KONDISI (Inset style)
                 const Padding(
                   padding: EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(
@@ -141,17 +159,20 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     ),
                   ),
                 ),
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300, width: 1.5),
                   ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      kondisiStr,
-                      style: const TextStyle(fontSize: 16, height: 1.4),
+                  child: Text(
+                    kondisiStr,
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.4,
+                      color: Colors.grey.shade800,
                     ),
                   ),
                 ),
@@ -196,21 +217,25 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   Widget _buildRow(String label, String val) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 80,
+          width: 85,
           child: Text(
             label,
             style: const TextStyle(
               color: Colors.grey,
               fontWeight: FontWeight.bold,
+              fontSize: 13,
             ),
           ),
         ),
-        const Text(": "),
-        Text(
-          val,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        const Text(": ", style: TextStyle(color: Colors.grey)),
+        Expanded(
+          child: Text(
+            val,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
         ),
       ],
     ),
