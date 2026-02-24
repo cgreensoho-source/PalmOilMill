@@ -49,6 +49,7 @@ func SetupRoutes(app *fiber.App) {
 	sample := protected.Group("/samples")
 	sample.Post("", sampleController.CreateSample) // Upload foto & data
 	sample.Get("", sampleController.GetAllSamples) // List riwayat
+	sample.Get("/my", sampleController.GetMySamples) // List riwayat milik user login
 	sample.Get("/:id", sampleController.GetSampleDetail)
 	sample.Get("/:id/export", sampleController.ExportSamplePDF) // Cetak PDF
 
@@ -66,11 +67,14 @@ func SetupRoutes(app *fiber.App) {
 	adminOnly := protected.Group("/admin", middleware.AdminOnly)
 
 	// CRUD User oleh Admin
+	adminOnly.Get("/users", adminCtrl.GetAllUsers)
+	adminOnly.Get("/users/:id", adminCtrl.GetUserByAdmin)
 	adminOnly.Put("/users/:id", adminCtrl.UpdateUserByAdmin)
 	adminOnly.Delete("/users/:id", adminCtrl.DeleteUser)
 
 	// Route ACC Sampel
-	adminOnly.Put("/samples/:id/review", sampleController.ReviewSample) // PUT /api/v1/admin/samples/1/review
+	adminOnly.Put("/samples/:id/review", sampleController.ReviewSample)   // PUT /api/v1/admin/samples/1/review
+	adminOnly.Put("/samples/:id", sampleController.EditSampleByAdmin)     // PUT /api/v1/admin/samples/1
 
 	// CRUD Stasiun oleh Admin (Create Station)
 	// URL: POST /api/v1/admin/stations

@@ -86,3 +86,26 @@ func (r *SampleRepository) UpdateReviewStatus(id string, status bool) error {
 	// Menggunakan Map untuk update field tertentu saja demi performa
 	return config.DB.Model(&models.Sample{}).Where("sample_id = ?", id).Update("is_reviewed", status).Error
 }
+
+// UpdateSampleData: Admin mengedit data sample (tanpa ubah gambar)
+func (r *SampleRepository) UpdateSampleData(sampleID uint, sampleName, condition *string, stationID *uint) error {
+	updates := map[string]interface{}{}
+
+	if sampleName != nil {
+		updates["sample_name"] = *sampleName
+	}
+	if condition != nil {
+		updates["condition"] = *condition
+	}
+	if stationID != nil {
+		updates["station_id"] = *stationID
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	return r.db.Model(&models.Sample{}).
+		Where("sample_id = ?", sampleID).
+		Updates(updates).Error
+}

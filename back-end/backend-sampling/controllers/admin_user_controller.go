@@ -31,6 +31,52 @@ type UpdateRequest struct {
 	Roles    []string `json:"roles"`
 }
 
+// GetAllUsers godoc
+// @Summary      List semua user (Admin Only)
+// @Description  Mengambil seluruh data user beserta role-nya. Hanya bisa diakses oleh Admin.
+// @Tags         admin-users
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.User
+// @Failure      500  {object}  map[string]string "error: Gagal mengambil data user"
+// @Router       /admin/users [get]
+func (ctrl *AdminUserController) GetAllUsers(c *fiber.Ctx) error {
+	users, err := ctrl.userRepo.GetAllUsers()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil data user"})
+	}
+
+	// Pastikan password tidak ikut terkirim
+	for i := range users {
+		users[i].Password = ""
+	}
+
+	return c.JSON(users)
+}
+
+// GetUserByAdmin godoc
+// @Summary      Detail User tertentu (Admin Only)
+// @Description  Mengambil detail satu user berdasarkan ID, termasuk roles. Hanya Admin yang dapat mengakses.
+// @Tags         admin-users
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Target User ID"
+// @Success      200  {object}  models.User
+// @Failure      404  {object}  map[string]string "error: User tidak ditemukan"
+// @Router       /admin/users/{id} [get]
+func (ctrl *AdminUserController) GetUserByAdmin(c *fiber.Ctx) error {
+	targetID, _ := c.ParamsInt("id")
+
+	user, err := ctrl.userRepo.GetUserByID(uint(targetID))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+	}
+
+	user.Password = ""
+
+	return c.JSON(user)
+}
+
 // UpdateUserByAdmin godoc
 // @Summary      Update User oleh Admin
 // @Description  Memperbarui data user tertentu berdasarkan ID. Hanya field yang dikirim yang akan diupdate.

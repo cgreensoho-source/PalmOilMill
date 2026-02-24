@@ -35,6 +35,13 @@ type CreateSampleRequest struct {
 	Condition  string `json:"condition"`
 }
 
+// EditSampleRequest untuk admin mengedit data sample
+type EditSampleRequest struct {
+	SampleName *string `json:"sample_name"`
+	Condition  *string `json:"condition"`
+	StationID  *uint   `json:"station_id"`
+}
+
 type CreateSampleResponse struct {
 	SampleID uint   `json:"sample_id"`
 	Message  string `json:"message"`
@@ -355,5 +362,98 @@ func (ctrl *SampleController) ReviewSample(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message":     "Status sampel berhasil diperbarui",
 		"is_reviewed": req.IsReviewed,
+	})
+}
+
+// GetMySamples godoc
+// @Summary      List sampling milik user login
+// @Description  Mengambil semua data sampling yang dibuat oleh user yang sedang login (berdasarkan user_id di JWT).
+// @Tags         samples
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]string "Unauthorized: token tidak valid"
+// @Router       /samples/my [get]
+func (ctrl *SampleController) GetMySamples(c *fiber.Ctx) error {
+	// Ambil user_id dari JWT (diset di middleware.JWTMiddleware)
+	userIDClaim := c.Locals("user_id")
+	if userIDClaim == nil {
+		return c.Status(401).JSON(fiber.Map{"error": "Unauthorized: user_id tidak ditemukan di token"})
+	}
+
+	var userID uint
+	switch v := userIDClaim.(type) {
+	case float64:
+		userID = uint(v)
+	case int:
+		userID = uint(v)
+	case uint:
+		userID = v
+	default:
+		return c.Status(500).JSON(fiber.Map{"error": "Tipe user_id pada token tidak dikenali"})
+	}
+
+	samples, err := ctrl.sampleRepo.GetSamplesByUserID(userID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil data sampling milik user"})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"total":   len(samples),
+		"data":    samples,
+	})
+}
+
+// EditSampleByAdmin godoc
+// @Summary      Edit data sampling (Admin Only)
+// @Description  Admin dapat mengubah nama sampel, kondisi, dan stasiun sampling. Hanya field yang dikirim yang akan diupdate.
+// @Tags         samples
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      int              true  "Sample ID"
+// @Param        sample  body      EditSampleRequest  true  "Data sample yang akan diupdate"
+// @Success      200     {object}  map[string]interface{}
+// @Failure      403     {object}  map[string]string "Forbidden: Admin only"
+// @Failure      404     {object}  map[string]string "Sample not found"
+// @Router       /admin/samples/{id} [put]
+func (ctrl *SampleController) EditSampleByAdmin(c *fiber.Ctx) error {
+	// Hanya admin yang boleh
+	role := c.Locals("role")
+	if role != "admin" {
+		return c.Status(403).JSON(fiber.Map{"error": "Akses ditolak: Hanya Admin yang bisa mengedit data sampling"})
+	}
+
+	sampleID, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid sample ID"})
+	}
+
+	// Pastikan sample ada dulu
+	_, err = ctrl.sampleRepo.GetSampleByID(uint(sampleID))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Sample tidak ditemukan"})
+	}
+
+	var req EditSampleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Format request salah"})
+	}
+
+	// Update hanya field yang dikirim
+	if err := ctrl.sampleRepo.UpdateSampleData(uint(sampleID), req.SampleName, req.Condition, req.StationID); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengupdate data sample"})
+	}
+
+	// Ambil ulang data terbaru
+	updatedSample, err := ctrl.sampleRepo.GetSampleByID(uint(sampleID))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil data sample terbaru"})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Data sample berhasil diupdate",
+		"data":    updatedSample,
 	})
 }

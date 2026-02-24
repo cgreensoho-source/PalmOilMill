@@ -45,6 +45,17 @@ func (r *UserRepository) GetUserByID(userID uint) (*models.User, error) {
 	return &user, nil
 }
 
+// 3b. GetAllUsers (Untuk Listing di Halaman Admin)
+func (r *UserRepository) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	// Preload Roles supaya di response sudah termasuk role masing-masing user
+	err := r.db.Preload("Roles").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 // 3. CreateUser (Dengan Transaction & Role Mapping)
 func (r *UserRepository) CreateUser(user *models.User, roleNames []string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
