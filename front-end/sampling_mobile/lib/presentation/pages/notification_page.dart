@@ -1,29 +1,80 @@
 import 'package:flutter/material.dart';
+import '../../data/models/notification_model.dart';
+import '../../data/services/notification_service.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  late Future<List<NotificationModel>> _notifications;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+
+    Future.delayed(const Duration(seconds: 5), _autoRefresh);
+  }
+
+  void _loadData() {
+    _notifications = NotificationService.getNotifications();
+  }
+
+  void _autoRefresh() {
+    setState(() {
+      _loadData();
+    });
+    Future.delayed(const Duration(seconds: 5), _autoRefresh);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text("Notifikasi", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green.shade700,
-        elevation: 0,
+        title: const Text("Notifikasi"),
+        backgroundColor: Colors.green,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.notifications_off_rounded, size: 80, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              "Tidak ada notifikasi baru",
-              style: TextStyle(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+      body: FutureBuilder<List<NotificationModel>>(
+        future: _notifications,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text("Tidak ada notifikasi"),
+            );
+          }
+
+          final data = snapshot.data!;
+
+          return ListView.builder(
+            itemCount: data.length,
+            itemBuilder: (context, index) {
+              final notif = data[index];
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                margin: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.notifications, color: Colors.green),
+                  title: Text(notif.message),
+                  subtitle: Text(notif.createdAt),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
