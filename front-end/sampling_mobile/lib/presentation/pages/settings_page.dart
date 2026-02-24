@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/auth/auth_bloc.dart';
 import '../../logic/auth/auth_event.dart';
+import '../../logic/auth/auth_state.dart';
+import '../widgets/initial_avatar.dart';
 import 'user_profile_page.dart';
 import 'login_page.dart';
 
@@ -11,7 +13,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           "Pengaturan",
@@ -26,27 +28,38 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Menu Profil User
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.grey.shade200,
-              child: Icon(Icons.person_outline, color: Colors.grey.shade700),
-            ),
-            title: const Text(
-              "Profil Pekerja",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: const Text("Lihat ID dan detail akun"),
-            trailing: Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey.shade500,
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfilePage(),
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              String username = "Pekerja";
+              if (state is AuthAuthenticated) {
+                username = state.user.username;
+              }
+
+              return ListTile(
+                leading: InitialAvatar(
+                  name: username,
+                  radius: 22,
+                  fontSize: 18,
+                  backgroundColor: Colors.green.shade700,
                 ),
+                title: Text(
+                  username,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text("Lihat ID dan detail akun"),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey.shade500,
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UserProfilePage(),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -55,7 +68,7 @@ class SettingsPage extends StatelessWidget {
           // Menu Tentang Aplikasi
           ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: Colors.grey.shade100,
               child: Icon(
                 Icons.info_outline_rounded,
                 color: Colors.grey.shade700,
@@ -68,26 +81,24 @@ class SettingsPage extends StatelessWidget {
               size: 16,
               color: Colors.grey.shade500,
             ),
-            onTap: () {
-              _showAboutAppDialog(context);
-            },
+            onTap: () => _showAboutAppDialog(context),
           ),
           const Divider(height: 32),
 
-          // Menu Logout di Settings
+          // Menu Logout Tanpa Warna Merah
           ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: Colors.grey.shade100,
               child: Icon(Icons.logout_rounded, color: Colors.grey.shade700),
             ),
             title: const Text(
               "Keluar Akun",
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            onTap: () {
-              // Cegah eksekusi langsung, panggil dialog konfirmasi
-              _showLogoutDialog(context);
-            },
+            onTap: () => _showLogoutDialog(context),
           ),
         ],
       ),
@@ -106,96 +117,34 @@ class SettingsPage extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // --- BAGIAN LOGO APLIKASI ---
             Image.asset(
-              'assets/images/icon.png',
+              'assets/images/logo.png',
               height: 80,
               width: 80,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.science,
-                  size: 80,
-                  color: Colors.grey.shade700,
-                );
-              },
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.science, size: 80, color: Colors.green),
             ),
             const SizedBox(height: 16),
-
-            // Nama Aplikasi
-            Text(
+            const Text(
               "MILL TRACK",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
-                color: Colors.grey.shade800,
               ),
             ),
             const SizedBox(height: 12),
-
-            // Deskripsi
-            Text(
-              "Sistem informasi manajemen terpadu untuk perekaman dan pelaporan data sampling lapangan secara real-time.",
+            const Text(
+              "Sistem informasi manajemen terpadu untuk perekaman data sampling lapangan secara real-time.",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.3,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.3),
             ),
-            const SizedBox(height: 16),
-
-            // Versi
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                "Versi 1.0.0",
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-            ),
-
             const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            // --- BAGIAN DEVELOPER ---
-            Text(
-              "Dikembangkan oleh:",
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-            ),
-            const SizedBox(height: 12),
-
-            // Logo Developer
             Image.asset(
               'assets/images/cgreen.png',
-              height: 100,
+              height: 70,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Text(
-                    "YOUR SOFTWARE HOUSE LOGO",
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                );
-              },
             ),
           ],
         ),
@@ -203,15 +152,10 @@ class SettingsPage extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey.shade800,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 12,
-                ),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              child: const Text(
+                "TUTUP",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              child: const Text("TUTUP"),
             ),
           ),
         ],
@@ -241,7 +185,8 @@ class SettingsPage extends StatelessWidget {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.shade800,
+              backgroundColor:
+                  Colors.grey.shade800, // Menggunakan abu-abu gelap netral
               foregroundColor: Colors.white,
             ),
             child: const Text("Ya, Keluar"),

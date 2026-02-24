@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/auth/auth_bloc.dart';
 import '../../logic/auth/auth_event.dart';
 import '../../logic/auth/auth_state.dart';
+import '../widgets/initial_avatar.dart';
 import 'login_page.dart';
 
 class UserProfilePage extends StatelessWidget {
@@ -26,25 +27,29 @@ class UserProfilePage extends StatelessWidget {
         builder: (context, state) {
           String username = "Memuat...";
           String nip = "-";
-          String role = "OPERATOR"; // Default role
+          String role = "OPERATOR";
 
           if (state is AuthAuthenticated) {
             username = state.user.username;
             nip = state.user.nip;
-            role = state.user.role; // Mengambil role dinamis
+            role = state.user.role;
           }
 
           return ListView(
             padding: const EdgeInsets.all(24.0),
             children: [
+              // Avatar Inisial dengan warna hijau tetap
               Center(
-                child: CircleAvatar(
+                child: InitialAvatar(
+                  name: username,
                   radius: 60,
-                  backgroundColor: primaryColor.withOpacity(0.1),
-                  child: Icon(Icons.person, size: 80, color: primaryColor),
+                  fontSize: 48,
+                  backgroundColor: primaryColor,
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Kartu Informasi Profil
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -68,7 +73,6 @@ class UserProfilePage extends StatelessWidget {
                         primaryColor,
                       ),
                       const Divider(),
-                      // Tampilan Role Dinamis menggantikan teks statis
                       _buildProfileItem(
                         Icons.work_outline,
                         "Jabatan / Role",
@@ -80,6 +84,8 @@ class UserProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
+
+              // Tombol Logout dengan tema netral (Abu-abu)
               _buildLogoutButton(context),
             ],
           );
@@ -96,10 +102,17 @@ class UserProfilePage extends StatelessWidget {
   ) {
     return ListTile(
       leading: Icon(icon, color: color),
-      title: Text(title),
+      title: Text(
+        title,
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+      ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: color, // Teks Nama, NIP, dan Role menjadi Hijau
+        ),
       ),
     );
   }
@@ -115,7 +128,7 @@ class UserProfilePage extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey.shade200,
+          backgroundColor: Colors.white,
           foregroundColor: Colors.grey.shade800,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -137,7 +150,7 @@ class UserProfilePage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
+            child: Text("Batal", style: TextStyle(color: Colors.grey.shade600)),
           ),
           ElevatedButton(
             onPressed: () {

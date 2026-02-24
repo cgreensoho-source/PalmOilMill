@@ -47,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
+          // LOGIK BERHASIL
           if (state is AuthAuthenticated) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -69,18 +70,32 @@ class _LoginPageState extends State<LoginPage> {
             );
           }
 
+          // LOGIK ERROR (USERNAME/PASSWORD SALAH)
           if (state is AuthError) {
+            ScaffoldMessenger.of(
+              context,
+            ).clearSnackBars(); // Bersihkan snackbar lama
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Row(
                   children: [
                     const Icon(Icons.error_outline, color: Colors.white),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(state.message)),
+                    // state.message berisi pesan kesalahan dari server/bloc
+                    Expanded(
+                      child: Text(
+                        state.message,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: Colors.red.shade800,
                 behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                margin: const EdgeInsets.all(12),
               ),
             );
           }
@@ -98,13 +113,19 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- AREA LOGO / JUDUL ---
-                    // Nanti kalau punya logo asli, buka komentar di bawah ini:
-                    Image.asset('assets/images/logo.png', height: 120),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 120,
+                      errorBuilder: (c, e, s) => const Icon(
+                        Icons.science,
+                        size: 100,
+                        color: Colors.green,
+                      ),
+                    ),
                     const SizedBox(height: 24),
 
                     Text(
-                      "MILL TRACK",
+                      "MILLTRACK",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 28,
@@ -125,7 +146,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 48),
 
-                    // --- AREA FORM LOGIN ---
                     Card(
                       elevation: 2,
                       shadowColor: Colors.black12,
@@ -138,9 +158,8 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             TextFormField(
                               controller: _usernameController,
-                              keyboardType: TextInputType.text,
                               decoration: InputDecoration(
-                                labelText: "ID Petugas / Username",
+                                labelText: "Nama Pengguna",
                                 prefixIcon: Icon(
                                   Icons.badge_outlined,
                                   color: primaryColor,
@@ -148,28 +167,13 @@ class _LoginPageState extends State<LoginPage> {
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: primaryColor,
-                                    width: 2,
-                                  ),
-                                ),
                                 filled: true,
                                 fillColor: Colors.white,
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Username wajib diisi';
-                                }
-                                return null;
-                              },
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Username wajib diisi'
+                                  : null,
                             ),
                             const SizedBox(height: 20),
 
@@ -187,39 +191,21 @@ class _LoginPageState extends State<LoginPage> {
                                     _obscurePassword
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
-                                    color: Colors.grey.shade600,
                                   ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
+                                  onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: primaryColor,
-                                    width: 2,
-                                  ),
-                                ),
                                 filled: true,
                                 fillColor: Colors.white,
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Kata sandi wajib diisi';
-                                }
-                                return null;
-                              },
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Kata sandi wajib diisi'
+                                  : null,
                             ),
                             const SizedBox(height: 32),
 
@@ -235,9 +221,6 @@ class _LoginPageState extends State<LoginPage> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: primaryColor,
                                       foregroundColor: Colors.white,
-                                      disabledBackgroundColor:
-                                          Colors.grey.shade300,
-                                      elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -270,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 24),
 
                     Text(
-                      "Copyright © 2026 CGreen. All rights reserved.",
+                      "© 2026 CGreen. All rights reserved.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,

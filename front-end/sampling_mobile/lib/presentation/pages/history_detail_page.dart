@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart'; // Wajib diimpor untuk kalkulasi jarak
+import 'package:geolocator/geolocator.dart';
 import '../../data/models/sample_model.dart';
 import '../../data/repositories/sample_repository.dart';
 
@@ -70,20 +70,21 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               ? rawData['data']
               : rawData;
 
-          // LOGIKA EKSTRAKSI ARRAY GAMBAR
-          String? imagePath;
-          if (data['images'] != null &&
-              data['images'] is List &&
-              (data['images'] as List).isNotEmpty) {
-            imagePath = data['images'][0]['image_path'];
-          }
-
-          String fullImageUrl = "";
-          if (imagePath != null && imagePath.isNotEmpty) {
-            String cleanPath = imagePath.replaceAll('\\', '/').trim();
-            fullImageUrl = cleanPath.startsWith('/')
-                ? '$serverBaseUrl$cleanPath'
-                : '$serverBaseUrl/$cleanPath';
+          // LOGIKA EKSTRAKSI MULTI-GAMBAR (ARRAY)
+          List<String> fullImageUrls = [];
+          if (data['images'] != null && data['images'] is List) {
+            for (var imgObj in data['images']) {
+              if (imgObj is Map && imgObj['image_path'] != null) {
+                String path = imgObj['image_path'].toString();
+                if (path.isNotEmpty) {
+                  String cleanPath = path.replaceAll('\\', '/').trim();
+                  String fullUrl = cleanPath.startsWith('/')
+                      ? '$serverBaseUrl$cleanPath'
+                      : '$serverBaseUrl/$cleanPath';
+                  fullImageUrls.add(fullUrl);
+                }
+              }
+            }
           }
 
           // EKSTRAKSI WAKTU & KONDISI
@@ -257,33 +258,47 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // BOX 3: GAMBAR
+                // BOX 3: GAMBAR (RENDER CAROUSEL HORIZONTAL)
                 const Text(
                   "Foto Lampiran",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    color: Colors.white,
-                    width: double.infinity,
-                    constraints: const BoxConstraints(minHeight: 200),
-                    child: fullImageUrl.isEmpty
-                        ? _buildImageError(
-                            "Data gambar tidak ditemukan pada sampel ini.",
-                          )
-                        : Image.network(
-                            fullImageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stack) {
-                              return _buildImageError(
-                                "Gagal memuat: $fullImageUrl",
-                              );
-                            },
-                          ),
-                  ),
-                ),
+
+                fullImageUrls.isEmpty
+                    ? _buildImageError(
+                        "Data gambar tidak ditemukan pada sampel ini.",
+                      )
+                    : SizedBox(
+                        height: 220,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: fullImageUrls.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              width: 160,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade300),
+                                color: Colors.white,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Image.network(
+                                  fullImageUrls[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) {
+                                    return _buildImageError(
+                                      "Gagal memuat gambar.",
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -321,11 +336,17 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   );
 
   Widget _buildImageError(String msg) => Container(
+    width: double.infinity,
     padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey.shade300),
+    ),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+        const Icon(Icons.broken_image, size: 40, color: Colors.grey),
         const SizedBox(height: 8),
         Text(
           msg,

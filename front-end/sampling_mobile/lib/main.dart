@@ -13,7 +13,7 @@ import 'logic/auth/auth_event.dart';
 import 'logic/auth/auth_state.dart';
 import 'logic/sample/sample_bloc.dart';
 import 'logic/history/sample_history_bloc.dart';
-import 'logic/notification/notification_bloc.dart'; // IMPORT BLOC NOTIFIKASI BARU
+import 'logic/notification/notification_bloc.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/main_page.dart';
 
@@ -69,7 +69,6 @@ class MyApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            // TRIGGER APP STARTED DI SINI
             create: (context) =>
                 AuthBloc(authRepository: authRepository)..add(AppStarted()),
           ),
@@ -83,7 +82,6 @@ class MyApp extends StatelessWidget {
             create: (context) =>
                 SampleHistoryBloc(sampleRepository: sampleRepository),
           ),
-          // INJEKSI BLOC NOTIFIKASI
           BlocProvider(
             create: (context) =>
                 NotificationBloc(sampleRepository: sampleRepository),
@@ -91,9 +89,19 @@ class MyApp extends StatelessWidget {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Sampling App',
-          theme: ThemeData(primarySwatch: Colors.green, useMaterial3: false),
-          // GUNAKAN ROUTER OTOMATIS, BUKAN HALAMAN LOGIN STATIS
+          title: 'MillTrack HPI',
+          theme: ThemeData(
+            primarySwatch: Colors.green,
+            useMaterial3: false,
+            fontFamily: 'MaisonNeue',
+            appBarTheme: const AppBarTheme(
+              titleTextStyle: TextStyle(
+                fontFamily: 'MaisonNeue',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           home: const AppRouter(),
         ),
       ),
@@ -101,30 +109,110 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Komponen penengah untuk menentukan rute berdasarkan state
-class AppRouter extends StatelessWidget {
+class AppRouter extends StatefulWidget {
   const AppRouter({super.key});
+
+  @override
+  State<AppRouter> createState() => _AppRouterState();
+}
+
+class _AppRouterState extends State<AppRouter> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Penundaan 2 detik sebelum masuk ke logika Auth
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _showSplash = false;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        if (_showSplash || state is AuthInitial) {
+          return const SplashUI();
+        }
+
         if (state is AuthAuthenticated) {
-          // Token ditemukan di lokal, langsung operasional
           return const MainPage();
         }
 
         if (state is AuthUnauthenticated || state is AuthError) {
-          // Tidak ada token atau error, arahkan ke login
           return const LoginPage();
         }
 
-        // Tampilan Splash Screen murni saat mengekstrak data dari SharedPreferences
-        return const Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(child: CircularProgressIndicator(color: Colors.green)),
-        );
+        return const SplashUI();
       },
+    );
+  }
+}
+
+class SplashUI extends StatelessWidget {
+  const SplashUI({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // LOGO UTAMA DI TENGAH
+          Center(
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 150,
+              height: 150,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(Icons.factory, size: 100, color: Colors.green.shade800),
+            ),
+          ),
+
+          // BRANDING PERUSAHAAN DI BAGIAN BAWAH
+          Positioned(
+            bottom: 60,
+            left: 0,
+            right: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "from",
+                  style: TextStyle(
+                    fontSize: 14, // Ukuran teks sedikit diperbesar
+                    color: Colors.grey.shade500,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Image.asset(
+                  'assets/images/cgreen.png',
+                  height:
+                      80, // Logo cgreen diperbesar secara signifikan dari sebelumnya (35)
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Text(
+                      "ASSET ERROR",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade700,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

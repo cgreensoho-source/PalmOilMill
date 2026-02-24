@@ -89,10 +89,36 @@ class _SampleFormPageState extends State<SampleFormPage> {
   Future<void> _fetchInitialLocation() async {
     setState(() {
       _isLoadingInitialLocation = true;
-      _locationStatus = "Mencari satelit GPS...";
+      _locationStatus = "Memeriksa status sensor GPS...";
     });
 
     try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          setState(() {
+            _isLoadingInitialLocation = false;
+            _locationStatus =
+                "GPS Perangkat Mati. Silakan nyalakan lalu tekan refresh.";
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("Mengarahkan ke pengaturan lokasi sistem..."),
+              backgroundColor: Colors.orange.shade800,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          await Geolocator.openLocationSettings();
+        }
+        return;
+      }
+
+      setState(() {
+        _locationStatus = "Mencari satelit GPS...";
+      });
+
       final posisi = await LocationService.getCurrentLocation();
 
       double targetLat = 0.0;
@@ -142,10 +168,13 @@ class _SampleFormPageState extends State<SampleFormPage> {
     }
   }
 
+  // KOMPRESI GAMBAR ABSOLUT
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 70,
+      imageQuality: 60, // Kompresi kualitas
+      maxWidth: 1080, // Paksa dimensi maksimal
+      maxHeight: 1080,
     );
 
     if (photo != null) {
@@ -175,7 +204,6 @@ class _SampleFormPageState extends State<SampleFormPage> {
     setState(() => _isFetchingLocation = true);
 
     try {
-      // FORMAT STRING KORDINAT SESUAI SWAGGER UI
       final String userCoordinate =
           "${_userPosition!.latitude}, ${_userPosition!.longitude}";
 
@@ -189,7 +217,7 @@ class _SampleFormPageState extends State<SampleFormPage> {
             stationId: _stationId,
             sampleName: _nameController.text,
             condition: _conditionController.text,
-            userCoordinate: userCoordinate, // ATRIBUT BARU
+            userCoordinate: userCoordinate,
             isOnline: hasInternet,
           ),
         );

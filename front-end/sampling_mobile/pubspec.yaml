@@ -34,6 +34,14 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+  fonts:
+    - family: MaisonNeue
+      fonts:
+        - asset: assets/fonts/fonnts.com-Maison_Neue_Book.ttf
+        - asset: assets/fonts/fonnts.com-Maison_Neue_Light.ttf
+          weight: 300
+        - asset: assets/fonts/fonnts.com-Maison_Neue_Bold.ttf
+          weight: 700
 
 flutter_icons:
   android: true

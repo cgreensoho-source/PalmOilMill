@@ -9,6 +9,7 @@ import '../../logic/auth/auth_state.dart';
 import '../../logic/sample/sample_bloc.dart';
 import '../../logic/sample/sample_state.dart';
 import '../../logic/sample/sync_service.dart';
+import '../widgets/initial_avatar.dart';
 import 'user_profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -145,24 +146,38 @@ class _DashboardPageState extends State<DashboardPage> {
             if (state is AuthAuthenticated) {
               firstName = state.user.username.split(" ")[0];
             }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return Row(
               children: [
-                const Text(
-                  "MILLTRACK HPI",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    letterSpacing: 1.2,
-                  ),
+                // LOGO DI SAMPING KIRI TEKS
+                Image.asset(
+                  'assets/images/iconnobg.png',
+                  height: 35,
+                  width: 35,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.science, color: Colors.white, size: 30),
                 ),
-                Text(
-                  "Halo, ${firstName.toUpperCase()}",
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.white70,
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "MILLTRACK HPI",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    Text(
+                      "Halo, ${firstName.toUpperCase()}",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
@@ -171,20 +186,31 @@ class _DashboardPageState extends State<DashboardPage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const UserProfilePage(),
+            child: BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                String username = "P";
+                if (state is AuthAuthenticated) {
+                  username = state.user.username;
+                }
+                return InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UserProfilePage(),
+                      ),
+                    );
+                  },
+                  customBorder: const CircleBorder(),
+                  child: InitialAvatar(
+                    name: username,
+                    radius: 20,
+                    fontSize: 14,
+                    backgroundColor:
+                        Colors.white24, // Transparan di atas AppBar
                   ),
                 );
               },
-              customBorder: const CircleBorder(),
-              child: const CircleAvatar(
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person, color: Colors.white),
-              ),
             ),
           ),
         ],

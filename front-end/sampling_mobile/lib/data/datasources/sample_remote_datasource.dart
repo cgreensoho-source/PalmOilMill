@@ -25,15 +25,21 @@ class SampleRemoteDataSource {
         'sample_name': sampleName,
         'condition': condition,
         'user_coordinate': userCoordinate,
-        'images': await Future.wait(
-          images.map(
-            (file) async => await MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split('/').last,
+      });
+
+      // KUNCI HARFIAH GOLANG: 'images' (TANPA KURUNG SIKU)
+      for (int i = 0; i < images.length; i++) {
+        formData.files.add(
+          MapEntry(
+            'images',
+            await MultipartFile.fromFile(
+              images[i].path,
+              filename:
+                  'sample_img_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
             ),
           ),
-        ),
-      });
+        );
+      }
 
       final response = await apiClient.dio.post('/samples', data: formData);
       return response.data['message'];
@@ -136,7 +142,22 @@ class SampleRemoteDataSource {
 
   Future<List<dynamic>> getApprovedSamples() async {
     try {
-      final response = await apiClient.dio.get('/samples/approved');
+      String endpoint = '/samples/my-approved';
+
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('user_session_data');
+
+      if (userJson != null && userJson.isNotEmpty) {
+        final Map<String, dynamic> userMap = jsonDecode(userJson);
+        final String role =
+            userMap['role']?.toString().toUpperCase() ?? 'OPERATOR';
+
+        if (role == 'ADMIN') {
+          endpoint = '/samples/approved';
+        }
+      }
+
+      final response = await apiClient.dio.get(endpoint);
 
       if (response.data is Map) {
         return response.data['data'] ??

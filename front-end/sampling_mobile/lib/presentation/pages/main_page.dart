@@ -28,7 +28,6 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
-    // Memuat notifikasi di latar belakang saat Dashboard utama terbuka
     context.read<NotificationBloc>().add(FetchNotificationsTriggered());
   }
 
@@ -66,23 +65,35 @@ class _MainPageState extends State<MainPage> {
         notchMargin: 8.0,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 65,
+          height: 70,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(
                 Icons.dashboard_rounded,
                 Icons.dashboard_outlined,
+                "Dashboard",
                 0,
               ),
-              _buildNavItem(Icons.history_rounded, Icons.history_outlined, 1),
+              _buildNavItem(
+                Icons.history_rounded,
+                Icons.history_outlined,
+                "Riwayat",
+                1,
+              ),
               const SizedBox(width: 48),
               _buildNavItem(
                 Icons.notifications_rounded,
                 Icons.notifications_none_rounded,
+                "Notifikasi",
                 2,
               ),
-              _buildNavItem(Icons.settings_rounded, Icons.settings_outlined, 3),
+              _buildNavItem(
+                Icons.settings_rounded,
+                Icons.settings_outlined,
+                "Pengaturan",
+                3,
+              ),
             ],
           ),
         ),
@@ -90,30 +101,27 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildNavItem(IconData filledIcon, IconData outlinedIcon, int index) {
+  Widget _buildNavItem(
+    IconData filledIcon,
+    IconData outlinedIcon,
+    String label,
+    int index,
+  ) {
     final isSelected = _selectedIndex == index;
+    final color = isSelected ? Colors.green.shade700 : Colors.grey.shade600;
 
-    final iconButton = IconButton(
-      icon: Icon(
-        isSelected ? filledIcon : outlinedIcon,
-        size: 28,
-        color: isSelected ? Colors.green : Colors.grey.shade600,
-      ),
-      onPressed: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-
-        // Segarkan data notifikasi secara halus jika tab notifikasi ditekan
-        if (index == 2) {
-          context.read<NotificationBloc>().add(FetchNotificationsTriggered());
-        }
-      },
+    // 1. KUNCI ABSOLUT: Kunci wujud ikon asli ke dalam variabel final yang tidak bisa diubah (immutable).
+    final Widget baseIcon = Icon(
+      isSelected ? filledIcon : outlinedIcon,
+      size: 26,
+      color: color,
     );
 
-    // INJEKSI BADGE HANYA UNTUK INDEX KE-2 (NOTIFIKASI)
+    // 2. Variabel dinamis untuk dirender
+    Widget finalIconWidget = baseIcon;
+
     if (index == 2) {
-      return BlocBuilder<NotificationBloc, NotificationState>(
+      finalIconWidget = BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
           int unreadCount = 0;
           if (state is NotificationLoaded) {
@@ -131,17 +139,44 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
             backgroundColor: Colors.red.shade600,
-            offset: const Offset(
-              -2,
-              10,
-            ), // Koordinat digeser ke dalam agar proporsional di BottomAppBar
-            child: iconButton,
+            offset: const Offset(4, -4),
+            // PANGGIL baseIcon DI SINI, BUKAN finalIconWidget! Mencegah Infinite Loop.
+            child: baseIcon,
           );
         },
       );
     }
 
-    // Kembalikan tombol biasa untuk tab lain
-    return iconButton;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+
+        if (index == 2) {
+          context.read<NotificationBloc>().add(FetchNotificationsTriggered());
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            finalIconWidget,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
