@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/db_helper.dart';
 import '../datasources/sample_remote_datasource.dart';
 import '../models/sample_model.dart';
@@ -14,7 +15,7 @@ class SampleRepository {
     required int stationId,
     required String sampleName,
     required String condition,
-    required String userCoordinate, // ATRIBUT BARU WAJIB
+    required String userCoordinate,
     required List<File> images,
     required bool isOnline,
   }) async {
@@ -25,18 +26,17 @@ class SampleRepository {
           stationId: stationId,
           sampleName: sampleName,
           condition: condition,
-          userCoordinate: userCoordinate, // LEMPAR KE API
+          userCoordinate: userCoordinate,
           images: images,
         );
         return "Data berhasil dikirim langsung ke server";
       } catch (e) {
-        // Fallback jika API gangguan/time-out
         final sampleId = await dbHelper.insert('offline_samples', {
           'user_id': userId,
           'station_id': stationId,
           'sample_name': sampleName,
           'condition': condition,
-          'user_coordinate': userCoordinate, // SIMPAN KE SQLITE
+          'user_coordinate': userCoordinate,
           'created_at': DateTime.now().toIso8601String(),
           'is_synced': 0,
         });
@@ -51,13 +51,12 @@ class SampleRepository {
         return "Server gangguan. Data dialihkan ke lokal.";
       }
     } else {
-      // Offline murni
       final sampleId = await dbHelper.insert('offline_samples', {
         'user_id': userId,
         'station_id': stationId,
         'sample_name': sampleName,
         'condition': condition,
-        'user_coordinate': userCoordinate, // SIMPAN KE SQLITE
+        'user_coordinate': userCoordinate,
         'created_at': DateTime.now().toIso8601String(),
         'is_synced': 0,
       });
@@ -87,6 +86,30 @@ class SampleRepository {
       return await remoteDataSource.getSampleDetail(id);
     } catch (e) {
       throw Exception(e.toString());
+    }
+  }
+
+  Future<List<SampleModel>> getApprovedNotifications() async {
+    try {
+      final List<dynamic> rawData = await remoteDataSource.getApprovedSamples();
+      return rawData.map((json) => SampleModel.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<List<int>> getReadNotificationIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> readIds = prefs.getStringList('read_notif_ids') ?? [];
+    return readIds.map((e) => int.parse(e)).toList();
+  }
+
+  Future<void> markNotificationAsRead(int sampleId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> readIds = prefs.getStringList('read_notif_ids') ?? [];
+    if (!readIds.contains(sampleId.toString())) {
+      readIds.add(sampleId.toString());
+      await prefs.setStringList('read_notif_ids', readIds);
     }
   }
 }

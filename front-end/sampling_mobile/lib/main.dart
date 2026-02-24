@@ -13,6 +13,7 @@ import 'logic/auth/auth_event.dart';
 import 'logic/auth/auth_state.dart';
 import 'logic/sample/sample_bloc.dart';
 import 'logic/history/sample_history_bloc.dart';
+import 'logic/notification/notification_bloc.dart'; // IMPORT BLOC NOTIFIKASI BARU
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/main_page.dart';
 
@@ -81,6 +82,11 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) =>
                 SampleHistoryBloc(sampleRepository: sampleRepository),
+          ),
+          // INJEKSI BLOC NOTIFIKASI
+          BlocProvider(
+            create: (context) =>
+                NotificationBloc(sampleRepository: sampleRepository),
           ),
         ],
         child: MaterialApp(

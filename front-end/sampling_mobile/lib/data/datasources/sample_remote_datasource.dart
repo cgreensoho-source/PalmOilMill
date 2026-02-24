@@ -83,7 +83,6 @@ class SampleRemoteDataSource {
         role = userMap['role']?.toString().toUpperCase() ?? 'OPERATOR';
       }
 
-      // LOGIKA ADMIN
       if (role == 'ADMIN') {
         final response = await apiClient.dio.get('/samples/$id');
         final dynamic rawData = response.data;
@@ -93,9 +92,7 @@ class SampleRemoteDataSource {
           return rawData as Map<String, dynamic>;
         }
         throw Exception("Format balasan Admin tidak dikenali.");
-      }
-      // LOGIKA OPERATOR DENGAN EKSTRAKSI AGRESIF
-      else {
+      } else {
         final response = await apiClient.dio.get('/samples/my');
         final dynamic rawData = response.data;
 
@@ -113,7 +110,6 @@ class SampleRemoteDataSource {
           );
         }
 
-        // Pencarian Paksa: Konversi semua variabel ke String agar perbandingan selalu setara
         final detailData = listData.firstWhere((element) {
           if (element is Map) {
             final elementId =
@@ -133,6 +129,24 @@ class SampleRemoteDataSource {
           );
         }
       }
+    } on DioException catch (e) {
+      throw DioHandler.parseError(e);
+    }
+  }
+
+  Future<List<dynamic>> getApprovedSamples() async {
+    try {
+      final response = await apiClient.dio.get('/samples/approved');
+
+      if (response.data is Map) {
+        return response.data['data'] ??
+            response.data['samples'] ??
+            response.data['items'] ??
+            [];
+      } else if (response.data is List) {
+        return response.data;
+      }
+      return [];
     } on DioException catch (e) {
       throw DioHandler.parseError(e);
     }

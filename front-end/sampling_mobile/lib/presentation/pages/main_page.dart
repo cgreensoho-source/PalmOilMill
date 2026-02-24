@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-// Import halaman-halaman yang akan masuk ke dalam tab
-import 'dashboard_page.dart'; // Tab 1
-import 'history_page.dart'; // Tab 2
-import 'notification_page.dart'; // Tab 3
-import 'settings_page.dart'; // Tab 4
-import 'scan_qr_page.dart'; // Untuk tombol tengah
+import '../../logic/notification/notification_bloc.dart';
+import 'dashboard_page.dart';
+import 'history_page.dart';
+import 'notification_page.dart';
+import 'settings_page.dart';
+import 'scan_qr_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -15,9 +16,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 0; // Index halaman yang sedang aktif
+  int _selectedIndex = 0;
 
-  // Daftar halaman untuk tiap tab
   final List<Widget> _pages = const [
     DashboardPage(),
     HistoryPage(),
@@ -26,14 +26,18 @@ class _MainPageState extends State<MainPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Memuat notifikasi di latar belakang saat Dashboard utama terbuka
+    context.read<NotificationBloc>().add(FetchNotificationsTriggered());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-
-      // IndexedStack agar state halaman tidak ter-reset saat pindah tab
       body: IndexedStack(index: _selectedIndex, children: _pages),
 
-      // TOMBOL SCAN QR DI TENGAH
       floatingActionButton: SizedBox(
         height: 68,
         width: 68,
@@ -56,7 +60,6 @@ class _MainPageState extends State<MainPage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // BOTTOM NAVIGATION BAR
       bottomNavigationBar: BottomAppBar(
         color: const Color(0xFFFFFFFF),
         shape: const CircularNotchedRectangle(),
@@ -67,18 +70,13 @@ class _MainPageState extends State<MainPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // PERUBAHAN DI SINI:
-              // Menggunakan Icons.dashboard_rounded (filled) dan dashboard_outlined sesuai permintaan
               _buildNavItem(
                 Icons.dashboard_rounded,
                 Icons.dashboard_outlined,
                 0,
               ),
-
               _buildNavItem(Icons.history_rounded, Icons.history_outlined, 1),
-
-              const SizedBox(width: 48), // Ruang kosong untuk tombol tengah
-
+              const SizedBox(width: 48),
               _buildNavItem(
                 Icons.notifications_rounded,
                 Icons.notifications_none_rounded,
@@ -92,12 +90,11 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  // Fungsi navigasi untuk mendukung perubahan bentuk ikon (Filled vs Outlined)
   Widget _buildNavItem(IconData filledIcon, IconData outlinedIcon, int index) {
     final isSelected = _selectedIndex == index;
-    return IconButton(
+
+    final iconButton = IconButton(
       icon: Icon(
-        // Logika pemilihan ikon: Jika dipilih pakai Filled, jika tidak pakai Outlined
         isSelected ? filledIcon : outlinedIcon,
         size: 28,
         color: isSelected ? Colors.green : Colors.grey.shade600,
@@ -106,7 +103,45 @@ class _MainPageState extends State<MainPage> {
         setState(() {
           _selectedIndex = index;
         });
+
+        // Segarkan data notifikasi secara halus jika tab notifikasi ditekan
+        if (index == 2) {
+          context.read<NotificationBloc>().add(FetchNotificationsTriggered());
+        }
       },
     );
+
+    // INJEKSI BADGE HANYA UNTUK INDEX KE-2 (NOTIFIKASI)
+    if (index == 2) {
+      return BlocBuilder<NotificationBloc, NotificationState>(
+        builder: (context, state) {
+          int unreadCount = 0;
+          if (state is NotificationLoaded) {
+            unreadCount = state.unreadCount;
+          }
+
+          return Badge(
+            isLabelVisible: unreadCount > 0,
+            label: Text(
+              unreadCount > 99 ? '99+' : unreadCount.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: Colors.red.shade600,
+            offset: const Offset(
+              -2,
+              10,
+            ), // Koordinat digeser ke dalam agar proporsional di BottomAppBar
+            child: iconButton,
+          );
+        },
+      );
+    }
+
+    // Kembalikan tombol biasa untuk tab lain
+    return iconButton;
   }
 }
