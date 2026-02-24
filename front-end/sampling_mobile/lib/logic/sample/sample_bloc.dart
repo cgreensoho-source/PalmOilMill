@@ -45,6 +45,7 @@ class SampleBloc extends Bloc<SampleEvent, SampleState> {
           stationId: event.stationId,
           sampleName: event.sampleName,
           condition: event.condition,
+          userCoordinate: event.userCoordinate, // WAJIB DITAMBAHKAN
           images: state.capturedImages,
           isOnline: event.isOnline,
         );

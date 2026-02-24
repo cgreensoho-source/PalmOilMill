@@ -6,30 +6,27 @@ abstract class SampleEvent extends Equatable {
   List<Object> get props => [];
 }
 
-// Saat user scan QR Code
 class ScanQRCodeTriggered extends SampleEvent {
   final String qrData;
   ScanQRCodeTriggered(this.qrData);
 }
 
-// Saat user mengambil foto petugas (Bisa dipanggil berkali-kali)
 class PhotoTaken extends SampleEvent {
   final File image;
   PhotoTaken(this.image);
 }
 
-// Menghapus foto yang salah sebelum submit
 class PhotoRemoved extends SampleEvent {
   final int index;
   PhotoRemoved(this.index);
 }
 
-// Saat user menekan tombol simpan/kirim
 class SampleSubmitted extends SampleEvent {
   final int userId;
   final int stationId;
   final String sampleName;
   final String condition;
+  final String userCoordinate; // ATRIBUT BARU WAJIB
   final bool isOnline;
 
   SampleSubmitted({
@@ -37,8 +34,19 @@ class SampleSubmitted extends SampleEvent {
     required this.stationId,
     required this.sampleName,
     required this.condition,
+    required this.userCoordinate, // ATRIBUT BARU WAJIB
     required this.isOnline,
   });
+
+  @override
+  List<Object> get props => [
+    userId,
+    stationId,
+    sampleName,
+    condition,
+    userCoordinate,
+    isOnline,
+  ];
 }
 
 class FetchSampleHistoryTriggered extends SampleEvent {}
